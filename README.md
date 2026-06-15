@@ -10,7 +10,7 @@ files.
 |---|---|---|
 | `yt-automation-kit` | Research, plan, title, thumbnail, and repurpose YouTube videos. | `yt-automation-kit/README.md` |
 | `agent-workflow-kit` | Turn broad tasks into goals, parallel subgoals, synthesis, and verification. | `agent-workflow-kit/README.md` |
-| `video-understanding-kit` | Analyze local videos with extracted frames, transcript, OCR, and timestamped evidence. | `video-understanding-kit/README.md` |
+| `video-understanding-kit` | Analyze local videos with Gemini multimodal models and timestamped answers. | `video-understanding-kit/README.md` |
 
 ## How The Repo Is Organized
 
