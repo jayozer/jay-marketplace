@@ -76,7 +76,7 @@ The user needs:
 For Claude Code default installs, the dependency command is:
 
 ```bash
-python3 -m pip install -r ~/.claude/skills/video-understanding/requirements.txt
+python3 -m pip install -r "${CLAUDE_SKILL_DIR}/requirements.txt"
 ```
 
 The helper auto-loads `.env` files from the current directory, parent
@@ -104,7 +104,7 @@ unless the user passes a different `--thinking-level`.
 Prefer saving both Markdown and JSON artifacts:
 
 ```bash
-python3 ~/.claude/skills/video-understanding/analyze_video_gemini.py "<video_path>" \
+python3 "${CLAUDE_SKILL_DIR}/analyze_video_gemini.py" "<video_path>" \
   --question "<question>" \
   --mode standard \
   --output-dir ~/video-understanding \
@@ -114,7 +114,7 @@ python3 ~/.claude/skills/video-understanding/analyze_video_gemini.py "<video_pat
 For maximum reasoning effort:
 
 ```bash
-python3 ~/.claude/skills/video-understanding/analyze_video_gemini.py "<video_path>" \
+python3 "${CLAUDE_SKILL_DIR}/analyze_video_gemini.py" "<video_path>" \
   --question "<question>" \
   --mode deep \
   --output-dir ~/video-understanding \

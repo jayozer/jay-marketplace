@@ -1,0 +1,34 @@
+{
+  "name": "jay-marketplace",
+  "owner": {
+    "name": "Jay Ozer",
+    "email": "jayozer@gmail.com"
+  },
+  "metadata": {
+    "description": "Installable AI-agent skill kits: agent workflows, YouTube automation, and Gemini video understanding.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "agent-workflow-kit",
+      "source": "./agent-workflow-kit",
+      "description": "Turn a broad task into a filled brief, a top-level goal, parallel subgoals, synthesis, and verification.",
+      "category": "workflow",
+      "keywords": ["goals", "subagents", "orchestration", "planning"]
+    },
+    {
+      "name": "yt-automation-kit",
+      "source": "./yt-automation-kit",
+      "description": "Research, plan, title/SEO, thumbnail, and repurpose YouTube videos (5 skills).",
+      "category": "content",
+      "keywords": ["youtube", "video", "seo", "thumbnail", "shorts"]
+    },
+    {
+      "name": "video-understanding-kit",
+      "source": "./video-understanding-kit",
+      "description": "Analyze local video files with Gemini multimodal models and timestamped, grounded answers.",
+      "category": "analysis",
+      "keywords": ["gemini", "video", "multimodal", "analysis"]
+    }
+  ]
+}

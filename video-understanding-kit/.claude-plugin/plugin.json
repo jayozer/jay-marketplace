@@ -1,0 +1,13 @@
+{
+  "name": "video-understanding-kit",
+  "description": "Analyze local video files with Gemini multimodal models (e.g. Gemini 3.1 Pro Preview) and return grounded, timestamped answers.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jay Ozer",
+    "email": "jayozer@gmail.com"
+  },
+  "homepage": "https://github.com/jayozer/jay-marketplace/tree/main/video-understanding-kit",
+  "repository": "https://github.com/jayozer/jay-marketplace",
+  "license": "MIT",
+  "keywords": ["gemini", "video", "multimodal", "analysis", "transcription"]
+}
