@@ -9,6 +9,7 @@ import os
 import re
 import time
 from dataclasses import asdict, dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,20 @@ from typing import Any
 DEFAULT_MODEL = "gemini-3.1-pro-preview"
 THINKING_LEVELS = ("low", "medium", "high")
 ENV_KEY_PATTERN = re.compile(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
+MODE_PROMPT_GUIDANCE = {
+    "quick": (
+        "Keep the answer brief. Prioritize the most important visible or audible "
+        "moments and avoid exhaustive scene-by-scene detail."
+    ),
+    "standard": (
+        "Provide a concise timeline with the key visual, audio, and on-screen text "
+        "evidence needed to answer the question."
+    ),
+    "deep": (
+        "Inspect fine details carefully, including small on-screen text, subtle UI "
+        "changes, and moments where timestamp precision matters."
+    ),
+}
 SUPPORTED_VIDEO_MIME_TYPES = {
     ".mp4": "video/mp4",
     ".mpeg": "video/mpeg",
@@ -38,6 +53,7 @@ class AnalysisResult:
     mime_type: str
     file_uri: str
     answer: str
+    upload_deleted: bool
 
 
 def mime_type_for_path(path: Path) -> str:
@@ -52,7 +68,15 @@ def mime_type_for_path(path: Path) -> str:
 
 
 def build_prompt(*, question: str, mode: str) -> str:
+    mode_guidance = MODE_PROMPT_GUIDANCE.get(mode)
+    if mode_guidance is None:
+        modes = ", ".join(sorted(MODE_PROMPT_GUIDANCE))
+        raise ValueError(f"Unsupported analysis mode: {mode}. Supported modes: {modes}.")
+
     return f"""Analyze the attached video in {mode} mode.
+
+Mode guidance:
+{mode_guidance}
 
 User question:
 {question}
@@ -168,6 +192,7 @@ def analyze_video(
     json_output: Path | None = None,
     poll_interval_seconds: float = 2,
     timeout_seconds: float = 600,
+    keep_upload: bool = False,
 ) -> AnalysisResult:
     video_path = video_path.expanduser().resolve()
     if not video_path.exists():
@@ -180,19 +205,26 @@ def analyze_video(
         file=str(video_path),
         config={"mime_type": mime_type, "display_name": video_path.name},
     )
-    active_file = wait_for_active_file(
-        client,
-        uploaded_file,
-        poll_interval_seconds=poll_interval_seconds,
-        timeout_seconds=timeout_seconds,
-    )
+    active_file = uploaded_file
+    upload_deleted = False
 
-    prompt = build_prompt(question=question, mode=mode)
-    response = client.models.generate_content(
-        model=model,
-        contents=[active_file, prompt],
-        config=build_generation_config(mode=mode, thinking_level=thinking_level),
-    )
+    try:
+        active_file = wait_for_active_file(
+            client,
+            uploaded_file,
+            poll_interval_seconds=poll_interval_seconds,
+            timeout_seconds=timeout_seconds,
+        )
+
+        prompt = build_prompt(question=question, mode=mode)
+        response = client.models.generate_content(
+            model=model,
+            contents=[active_file, prompt],
+            config=build_generation_config(mode=mode, thinking_level=thinking_level),
+        )
+    finally:
+        if not keep_upload:
+            upload_deleted = delete_uploaded_file(client, active_file)
 
     answer = getattr(response, "text", "") or ""
     result = AnalysisResult(
@@ -203,6 +235,7 @@ def analyze_video(
         mime_type=mime_type,
         file_uri=getattr(active_file, "uri", ""),
         answer=answer,
+        upload_deleted=upload_deleted,
     )
 
     if markdown_output:
@@ -211,6 +244,25 @@ def analyze_video(
         write_json(json_output, result)
 
     return result
+
+
+def delete_uploaded_file(client: Any, file_ref: Any) -> bool:
+    file_name = getattr(file_ref, "name", "")
+    delete = getattr(getattr(client, "files", None), "delete", None)
+    if not file_name or not callable(delete):
+        return False
+
+    try:
+        delete(name=file_name)
+    except TypeError:
+        try:
+            delete(file_name)
+        except Exception:
+            return False
+    except Exception:
+        return False
+
+    return True
 
 
 def write_markdown(path: Path, result: AnalysisResult) -> None:
@@ -231,6 +283,7 @@ def render_markdown(result: AnalysisResult) -> str:
 - Mode: `{result.mode}`
 - MIME type: `{result.mime_type}`
 - File URI: `{result.file_uri}`
+- Upload deleted: `{result.upload_deleted}`
 
 ## Question
 
@@ -259,6 +312,34 @@ def create_client(*, env_file: Path | None = None) -> Any:
     return genai.Client()
 
 
+def slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "video-analysis"
+
+
+def today_slug() -> str:
+    return date.today().isoformat()
+
+
+def resolve_output_paths(
+    *,
+    video_path: Path,
+    output_dir: Path | None,
+    slug: str | None,
+    markdown_output: Path | None,
+    json_output: Path | None,
+) -> tuple[Path | None, Path | None]:
+    if output_dir is None:
+        return markdown_output, json_output
+
+    folder_slug = slugify(slug) if slug else f"{today_slug()}-{slugify(video_path.stem)}"
+    base_dir = output_dir.expanduser() / folder_slug
+    return (
+        markdown_output or base_dir / "analysis.md",
+        json_output or base_dir / "analysis.json",
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("video_path", help="Local video file path to analyze")
@@ -270,8 +351,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--model",
-        default=os.environ.get("GEMINI_MODEL", DEFAULT_MODEL),
-        help=f"Gemini model to use (default: {DEFAULT_MODEL})",
+        help=f"Gemini model to use (defaults to GEMINI_MODEL or {DEFAULT_MODEL})",
     )
     parser.add_argument(
         "--mode",
@@ -286,8 +366,22 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("-o", "--output", type=Path, help="Markdown output path")
     parser.add_argument("--json-output", type=Path, help="JSON output path")
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Directory where analysis.md and analysis.json should be written.",
+    )
+    parser.add_argument(
+        "--slug",
+        help="Folder slug to use inside --output-dir. Defaults to <date>-<video-filename>.",
+    )
     parser.add_argument("--poll-interval", type=float, default=2)
     parser.add_argument("--timeout", type=float, default=600)
+    parser.add_argument(
+        "--keep-upload",
+        action="store_true",
+        help="Keep the uploaded Gemini file instead of deleting it after analysis.",
+    )
     parser.add_argument(
         "--env-file",
         type=Path,
@@ -296,22 +390,35 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def resolve_model(explicit_model: str | None) -> str:
+    return explicit_model or os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL
+
+
 def main() -> int:
     args = parse_args()
-    result = analyze_video(
-        client=create_client(env_file=args.env_file),
+    client = create_client(env_file=args.env_file)
+    markdown_output, json_output = resolve_output_paths(
         video_path=Path(args.video_path),
-        question=args.question,
-        model=args.model,
-        mode=args.mode,
-        thinking_level=args.thinking_level,
+        output_dir=args.output_dir,
+        slug=args.slug,
         markdown_output=args.output,
         json_output=args.json_output,
+    )
+    result = analyze_video(
+        client=client,
+        video_path=Path(args.video_path),
+        question=args.question,
+        model=resolve_model(args.model),
+        mode=args.mode,
+        thinking_level=args.thinking_level,
+        markdown_output=markdown_output,
+        json_output=json_output,
         poll_interval_seconds=args.poll_interval,
         timeout_seconds=args.timeout,
+        keep_upload=args.keep_upload,
     )
 
-    if not args.output:
+    if not markdown_output:
         print(render_markdown(result))
     return 0
 

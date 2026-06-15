@@ -20,7 +20,8 @@ an answer in timestamps without running a local video extraction stack.
 
 ## What's In Here
 
-- `skills/video-understanding` - upload local videos to Gemini and answer timestamp-grounded questions with `gemini-3.1-pro-preview` by default.
+- `BLUEPRINT.md` - copy-paste prompts and manual usage examples.
+- `skills/video-understanding` - upload local videos to Gemini, answer timestamp-grounded questions with `gemini-3.1-pro-preview` by default, save Markdown and JSON artifacts, and delete the uploaded Gemini file after analysis unless `--keep-upload` is used.
 
 ## Install
 
@@ -57,8 +58,10 @@ Ask in plain English and include a video path when possible:
 - "Use deep mode on this product walkthrough and give me timestamped findings."
 
 The skill defaults to `gemini-3.1-pro-preview` and standard mode. Use quick mode
-for fast overviews and deep mode when you want more careful timestamped analysis.
-Deep mode explicitly sends Gemini's highest Gemini 3 thinking level, `high`.
+for brief summaries, standard mode for concise timelines, and deep mode when you
+want more careful timestamped analysis of details such as small on-screen text or
+subtle UI changes. Deep mode explicitly sends Gemini's highest Gemini 3 thinking
+level, `high`.
 
 Manual helper usage:
 
@@ -66,8 +69,7 @@ Manual helper usage:
 python3 skills/video-understanding/analyze_video_gemini.py "/path/to/demo.mp4" \
   --question "What happens in this video?" \
   --mode standard \
-  --output analysis.md \
-  --json-output analysis.json
+  --output-dir ~/video-understanding
 ```
 
 For maximum reasoning effort:
@@ -81,9 +83,17 @@ python3 skills/video-understanding/analyze_video_gemini.py "/path/to/demo.mp4" \
 You can override the Gemini 3 thinking level with `--thinking-level low`,
 `--thinking-level medium`, or `--thinking-level high`.
 
+The helper deletes the Gemini Files API upload after analysis by default. Use
+`--keep-upload` only when you intentionally want the uploaded file to remain
+available for debugging, auditing, or follow-up work.
+
 For local repo development, a `.env` at the repo root works because the helper
-searches the current directory and its parents. The `.env` file is ignored by
-Git.
+searches the current directory and its parents before resolving `GEMINI_API_KEY`
+and `GEMINI_MODEL`. The `.env` file is ignored by Git.
+
+By default, saved artifacts go under
+`~/video-understanding/<YYYY-MM-DD>-<video-slug>/` when you use `--output-dir`.
+Each run writes `analysis.md` and `analysis.json`.
 
 Supported input formats follow Gemini API video support: `.mp4`, `.mpeg`,
 `.mov`, `.avi`, `.flv`, `.mpg`, `.webm`, `.wmv`, and `.3gp`. Convert `.mkv`
@@ -102,6 +112,6 @@ python3 scripts/validate_skills.py
 You can also run the validator without installing globally:
 
 ```bash
-uv run --with PyYAML --with pytest pytest
+uv run --with PyYAML --with pytest --with google-genai pytest
 uv run --with PyYAML python scripts/validate_skills.py
 ```

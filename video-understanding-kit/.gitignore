@@ -1,0 +1,8 @@
+.env
+*.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+analysis.md
+analysis.json
