@@ -1,134 +1,133 @@
 ---
 name: video-understanding
-description: Analyze local video files or folders by extracting frames, audio transcripts, OCR text, and timelines with the vidclaude CLI, then answer grounded questions with timestamps. Use when the user asks to analyze, understand, describe, summarize, inspect, or answer questions about videos, including .mp4, .mov, .mkv, or .webm files.
-allowed-tools: Bash(vidclaude:*), Bash(which:*), Bash(ffmpeg:*), Read, Glob, Grep
+description: Analyze local video files with Gemini multimodal models, especially Gemini 3.1 Pro Preview, by uploading supported video formats and answering grounded questions with timestamps. Use when the user asks to analyze, understand, describe, summarize, inspect, or answer questions about videos such as .mp4, .mov, .webm, .avi, .wmv, .mpeg, .mpg, .flv, or .3gp files.
+allowed-tools: Bash(python3:*), Read, Glob, Grep
 ---
 
 # Video Understanding
 
-Analyze videos by extracting visual frames, audio transcripts, OCR text, and a
-timestamped evidence report, then reason over the combined evidence.
+Analyze videos by sending the video directly to Gemini, then answer the user's
+question with timestamp-grounded observations.
 
-The extraction is performed by the `vidclaude` CLI. The agent reads the
-resulting evidence and key frame images to answer the user's question.
+Use the bundled `analyze_video_gemini.py` helper. It uploads a local video with
+the Gemini Files API, waits for processing, asks the configured Gemini model to
+analyze the video, and writes optional Markdown and JSON outputs.
 
 ## 1. Parse The Request
 
 Identify:
 
-- The video file or folder path.
+- The local video file path.
 - The user's question or desired output.
-- The extraction mode, if specified.
+- The analysis mode, if specified.
+- Optional output paths.
 
-Use `standard` mode by default. Use `quick` for fast overviews. Use `deep` when
-the user asks for detailed visual inspection, OCR-heavy analysis, small text,
-complex scenes, or a high-confidence timeline.
+Use `standard` mode by default. Use `quick` for fast summaries. Use `deep` when
+the user asks for detailed visual inspection, small on-screen text, complex UI
+changes, or high-confidence timestamped findings.
 
 If the path is missing, ask for it. If the file is in a protected macOS folder
 and cannot be opened, ask the user to move it to an accessible location or grant
 the terminal/IDE the needed file access.
 
-## 2. Extract Evidence
+## 2. Check Setup
 
-Run one of these commands.
+The user needs:
 
-Standard analysis:
+- `GEMINI_API_KEY` in the environment.
+- Python dependencies installed from this skill's `requirements.txt`.
 
-```bash
-vidclaude "<video_path>" --extract --mode standard --verbose
-```
-
-Quick analysis:
+For Claude Code default installs, the dependency command is:
 
 ```bash
-vidclaude "<video_path>" --extract --mode quick --verbose
+python3 -m pip install -r ~/.claude/skills/video-understanding/requirements.txt
 ```
 
-Deep analysis:
+The default model is `gemini-3.1-pro-preview`. The user can override it with
+`GEMINI_MODEL` or the helper's `--model` flag.
+
+## 3. Run Gemini Analysis
+
+For Claude Code default installs:
 
 ```bash
-vidclaude "<video_path>" --extract --mode deep --verbose
+python3 ~/.claude/skills/video-understanding/analyze_video_gemini.py "<video_path>" \
+  --question "<question>" \
+  --mode standard
 ```
 
-For a folder of videos:
+To save artifacts:
 
 ```bash
-vidclaude "<folder_path>" --extract --mode standard --verbose
+python3 ~/.claude/skills/video-understanding/analyze_video_gemini.py "<video_path>" \
+  --question "<question>" \
+  --mode deep \
+  --output "<analysis.md>" \
+  --json-output "<analysis.json>"
 ```
 
-The command prints a cache directory path, such as:
+If running from the project checkout instead of an installed skill, use:
 
-```text
-Cache: /path/.vidcache/<hash>
+```bash
+python3 skills/video-understanding/analyze_video_gemini.py "<video_path>" \
+  --question "<question>"
 ```
 
-If the user asks a follow-up question about the same video, reuse the cache.
-Only force re-extraction with `--no-cache` when the user asks for it or when the
-cached evidence is stale.
+## 4. Answer The User
 
-## 3. Read The Evidence
+Use the helper output as the evidence-backed answer.
 
-Read `<cache>/evidence.md`. Use it as the primary timeline, transcript, OCR, and
-frame index.
+When reporting:
 
-Then inspect representative frames from the evidence report:
+- Include timestamps for important observations.
+- Distinguish visual evidence, spoken/audio evidence, and on-screen text when useful.
+- Mention uncertainty when Gemini is uncertain or when the video is ambiguous.
+- Avoid claiming exact details that are not supported by the model output.
 
-- Choose 5-10 frames for normal questions.
-- Spread frames across the full duration.
-- Include extra frames around timestamps relevant to the user's question.
-- Use the platform's image-viewing ability: Claude Code can read image paths;
-  Codex may use `view_image` or an equivalent local image viewer.
-
-## 4. Answer The Question
-
-Ground claims in the extracted evidence:
-
-- Cite timestamps for important observations.
-- Distinguish visual evidence, transcript evidence, and OCR evidence when useful.
-- Mention uncertainty when frames, audio, or OCR are ambiguous.
-- Avoid claiming exact details that are not visible, audible, or present in the
-  extracted report.
-
-For summaries, prefer a timeline with the most important moments. For debugging,
+For summaries, prefer a concise timeline. For debugging or product walkthroughs,
 walk through the relevant segment and describe what changes on screen.
 
-## CLI Reference
+## Supported Formats
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `input` | required | Video file or folder path |
-| `--extract` | off | Extract evidence only |
-| `-q "..."` | none | Question for standalone API mode |
-| `-f N` | mode default | Frames per second override |
-| `-m N` | mode default | Max frames override |
-| `--no-audio` | off | Skip audio transcription |
-| `--no-ocr` | off | Skip OCR extraction |
-| `--mode` | standard | `quick`, `standard`, or `deep` |
-| `--verbose` | off | Detailed progress output |
-| `--no-cache` | off | Force re-extraction |
-| `--api` | off | Standalone mode, if configured |
-| `-o file` | stdout | Write output to file |
+Gemini API supports these video MIME types:
 
-## Modes
+- `video/mp4`
+- `video/mpeg`
+- `video/quicktime`
+- `video/avi`
+- `video/x-flv`
+- `video/mpg`
+- `video/webm`
+- `video/wmv`
+- `video/3gpp`
 
-| Aspect | quick | standard | deep |
-|--------|-------|----------|------|
-| Frame sampling | 0.2fps, max 20 | 0.5fps plus shot boundaries, max 60 | 1.0fps plus burst, max 150 |
-| Audio | whisper base | whisper base | whisper small |
-| OCR | skipped | keyframes only | all frames |
+If the user provides `.mkv`, ask them to convert it to `.mp4` or another
+supported format before analysis.
 
-## Prerequisites
+## Helper Reference
 
-- `vidclaude` CLI on `PATH` (`which vidclaude`).
-- `ffmpeg` on `PATH` (`ffmpeg -version`).
-- Optional OCR support: Tesseract 5.x and `pytesseract`.
+```text
+usage: analyze_video_gemini.py [-h] [-q QUESTION] [--model MODEL]
+                               [--mode {quick,standard,deep}] [-o OUTPUT]
+                               [--json-output JSON_OUTPUT]
+                               [--poll-interval POLL_INTERVAL]
+                               [--timeout TIMEOUT]
+                               video_path
+```
+
+Important options:
+
+- `--question` / `-q`: question to ask about the video.
+- `--model`: Gemini model, defaulting to `GEMINI_MODEL` or `gemini-3.1-pro-preview`.
+- `--mode`: `quick`, `standard`, or `deep`; shapes the analysis prompt.
+- `--output`: write Markdown output.
+- `--json-output`: write structured JSON output.
+- `--timeout`: maximum seconds to wait for Gemini file processing.
 
 ## Troubleshooting
 
-- `Path not found` or `No such file or directory` for a real file: this is often
-  macOS privacy protection. Move the video to an accessible folder or grant Full
-  Disk Access to the terminal/IDE in System Settings.
-- `ffmpeg not found`: install ffmpeg and ensure it is on `PATH`.
-- Audio skipped: install the audio dependencies expected by `vidclaude`.
-- OCR skipped: install Tesseract and `pytesseract`.
-- Extraction is slow: use `--mode quick` or lower the frame cap with `-m`.
+- `Missing GEMINI_API_KEY`: export a Gemini API key before running the helper.
+- `Missing dependency: google-genai`: install this skill's `requirements.txt`.
+- `Unsupported video format`: convert the video to a supported format such as `.mp4`.
+- `Timed out waiting for Gemini file`: retry later, use a smaller video, or increase `--timeout`.
+- `Path not found`: move the video to an accessible folder or grant the terminal/IDE file access.
