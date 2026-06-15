@@ -21,6 +21,12 @@ ALLOWED_FRONTMATTER_KEYS = {
     "name",
     "user-invocable",
 }
+REQUIRED_SKILL_FILES = {
+    "video-understanding": [
+        "analyze_video_gemini.py",
+        "requirements.txt",
+    ],
+}
 
 
 def validate_skill(skill_dir: Path) -> list[str]:
@@ -65,6 +71,12 @@ def validate_skill(skill_dir: Path) -> list[str]:
         errors.append(
             f"{skill_md.relative_to(ROOT)}: folder name should match skill name"
         )
+
+    if isinstance(name, str):
+        for required_file in REQUIRED_SKILL_FILES.get(name, []):
+            path = skill_dir / required_file
+            if not path.is_file():
+                errors.append(f"{path.relative_to(ROOT)}: missing required file")
 
     return errors
 
