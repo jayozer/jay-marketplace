@@ -12,7 +12,7 @@ an answer in timestamps without running a local video extraction stack.
 
 - **Claude Code or Codex** - the skill is written to work in either environment.
 - **Python 3** - required for the bundled Gemini helper.
-- **Gemini API key** - set `GEMINI_API_KEY` in your environment.
+- **Gemini API key** - set `GEMINI_API_KEY` in your environment or in a `.env` file.
 - **google-genai** - install with `pip install -r skills/video-understanding/requirements.txt`.
 - **PyYAML** - only needed if you want to validate the skill locally: run `pip install -r requirements-dev.txt`.
 
@@ -36,13 +36,14 @@ For Claude Code:
    ```bash
    export GEMINI_API_KEY=your_key_here
    ```
+   The helper also auto-loads `~/.claude/.env`, so you can put `GEMINI_API_KEY=...` there instead.
 5. Start or restart Claude Code so it picks up the new skill.
 
 For Codex:
 
 1. Copy `skills/video-understanding/` into your configured Codex skills folder.
 2. Install the helper dependency from the copied skill folder.
-3. Set `GEMINI_API_KEY`.
+3. Set `GEMINI_API_KEY` in your shell, in a parent-directory `.env`, or with the helper's `--env-file` option.
 4. Restart Codex if needed so it refreshes available skills.
 
 ## How To Use It
@@ -67,6 +68,10 @@ python3 skills/video-understanding/analyze_video_gemini.py "/path/to/demo.mp4" \
   --output analysis.md \
   --json-output analysis.json
 ```
+
+For local repo development, a `.env` at the repo root works because the helper
+searches the current directory and its parents. The `.env` file is ignored by
+Git.
 
 Supported input formats follow Gemini API video support: `.mp4`, `.mpeg`,
 `.mov`, `.avi`, `.flv`, `.mpg`, `.webm`, `.wmv`, and `.3gp`. Convert `.mkv`

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -13,6 +14,7 @@ from typing import Any
 
 
 DEFAULT_MODEL = "gemini-3.1-pro-preview"
+ENV_KEY_PATTERN = re.compile(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
 SUPPORTED_VIDEO_MIME_TYPES = {
     ".mp4": "video/mp4",
     ".mpeg": "video/mpeg",
@@ -61,6 +63,63 @@ Answer requirements:
 - If something is uncertain, say that it is uncertain instead of guessing.
 - Prefer a concise timeline for summaries and a focused explanation for direct questions.
 """
+
+
+def load_env_files(*, explicit_env_file: Path | None = None) -> list[Path]:
+    paths = [explicit_env_file] if explicit_env_file else _candidate_env_files()
+    loaded: list[Path] = []
+    seen: set[Path] = set()
+
+    for raw_path in paths:
+        if raw_path is None:
+            continue
+        path = raw_path.expanduser().resolve()
+        if path in seen:
+            continue
+        seen.add(path)
+
+        explicit_path = explicit_env_file.expanduser().resolve() if explicit_env_file else None
+        if explicit_path and path == explicit_path and not path.exists():
+            raise FileNotFoundError(f"Environment file does not exist: {path}")
+        if not path.is_file():
+            continue
+
+        _load_env_file(path)
+        loaded.append(path)
+
+    return loaded
+
+
+def _candidate_env_files() -> list[Path]:
+    candidates: list[Path] = []
+    for base in (Path.cwd().resolve(), Path(__file__).resolve().parent):
+        candidates.append(base / ".env")
+        candidates.extend(parent / ".env" for parent in base.parents)
+
+    home = Path.home()
+    candidates.extend([home / ".claude" / ".env", home / ".env"])
+    return candidates
+
+
+def _load_env_file(path: Path) -> None:
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+
+        match = ENV_KEY_PATTERN.match(stripped)
+        if not match:
+            continue
+
+        key, value = match.groups()
+        os.environ.setdefault(key, _clean_env_value(value))
+
+
+def _clean_env_value(value: str) -> str:
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+        return value[1:-1]
+    return value
 
 
 def wait_for_active_file(
@@ -171,7 +230,9 @@ def render_markdown(result: AnalysisResult) -> str:
 """
 
 
-def create_client() -> Any:
+def create_client(*, env_file: Path | None = None) -> Any:
+    load_env_files(explicit_env_file=env_file)
+
     try:
         from google import genai
     except ImportError as exc:
@@ -210,13 +271,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--json-output", type=Path, help="JSON output path")
     parser.add_argument("--poll-interval", type=float, default=2)
     parser.add_argument("--timeout", type=float, default=600)
+    parser.add_argument(
+        "--env-file",
+        type=Path,
+        help="Optional .env file to load before reading GEMINI_API_KEY",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     result = analyze_video(
-        client=create_client(),
+        client=create_client(env_file=args.env_file),
         video_path=Path(args.video_path),
         question=args.question,
         model=args.model,

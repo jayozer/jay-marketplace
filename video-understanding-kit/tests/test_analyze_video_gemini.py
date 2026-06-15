@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -71,6 +72,35 @@ def test_build_prompt_requests_timestamp_grounded_answer() -> None:
     assert "timestamps" in prompt.lower()
     assert "deep" in prompt.lower()
     assert "uncertain" in prompt.lower()
+
+
+def test_load_env_files_sets_missing_values_without_overwriting(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text(
+        "\n".join(
+            [
+                "# local credentials",
+                "GEMINI_API_KEY=file-key",
+                "GEMINI_MODEL='gemini-3.1-pro-preview'",
+                "EXISTING_VALUE=from-file",
+            ]
+        )
+        + "\n"
+    )
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_MODEL", raising=False)
+    monkeypatch.setenv("EXISTING_VALUE", "from-env")
+
+    loaded = gemini_video.load_env_files(explicit_env_file=env_path)
+
+    assert loaded == [env_path]
+    assert "GEMINI_API_KEY" in os.environ
+    assert os.environ["GEMINI_API_KEY"] == "file-key"
+    assert os.environ["GEMINI_MODEL"] == "gemini-3.1-pro-preview"
+    assert os.environ["EXISTING_VALUE"] == "from-env"
 
 
 def test_analyze_video_uploads_generates_and_writes_outputs(tmp_path: Path) -> None:

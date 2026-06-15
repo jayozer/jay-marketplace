@@ -37,6 +37,10 @@ The user needs:
 - `GEMINI_API_KEY` in the environment.
 - Python dependencies installed from this skill's `requirements.txt`.
 
+The helper auto-loads `.env` files from the current directory, parent
+directories, `~/.claude/.env`, and `~/.env`. For a specific file, pass
+`--env-file`.
+
 For Claude Code default installs, the dependency command is:
 
 ```bash
@@ -112,6 +116,7 @@ usage: analyze_video_gemini.py [-h] [-q QUESTION] [--model MODEL]
                                [--json-output JSON_OUTPUT]
                                [--poll-interval POLL_INTERVAL]
                                [--timeout TIMEOUT]
+                               [--env-file ENV_FILE]
                                video_path
 ```
 
@@ -123,6 +128,7 @@ Important options:
 - `--output`: write Markdown output.
 - `--json-output`: write structured JSON output.
 - `--timeout`: maximum seconds to wait for Gemini file processing.
+- `--env-file`: load a specific `.env` file before reading `GEMINI_API_KEY`.
 
 ## Troubleshooting
 
