@@ -32,7 +32,7 @@ If the user just provides keywords with no flags, use the defaults.
 ### Step 1: Run the Search
 
 ```
-python3 "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/skills/yt-search/search_youtube.py" <keywords> --days <days> --top <top> --search-count <search-count> --json
+python3 "${CLAUDE_SKILL_DIR}/search_youtube.py" <keywords> --days <days> --top <top> --search-count <search-count> --json
 ```
 
 This will:

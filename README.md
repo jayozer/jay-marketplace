@@ -65,9 +65,10 @@ Each kit still works the old way — copy its skill folders into your skills dir
 cp -R yt-automation-kit/skills/* ~/.claude/skills/
 ```
 
-Bundled scripts resolve their own location with
-`${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/skills/...`, so the **same SKILL.md works
-under both the marketplace install and this manual copy** — no edits needed.
+Bundled scripts are referenced with `${CLAUDE_SKILL_DIR}` (the directory holding
+the skill's `SKILL.md`), which Claude Code resolves correctly for **personal,
+project, and plugin** installs — so the **same SKILL.md works under both the
+marketplace install and this manual copy** with no edits.
 
 For Codex, copy the skill folder into your configured Codex skills directory and
 restart Codex if needed.
@@ -85,7 +86,7 @@ restart Codex if needed.
   skills/
     <skill-name>/
       SKILL.md              # auto-discovered; frontmatter name + description
-      <helper scripts>      # optional, referenced via ${CLAUDE_PLUGIN_ROOT}
+      <helper scripts>      # optional, referenced via ${CLAUDE_SKILL_DIR}
 ```
 
 `skills/` is auto-discovered — a plugin does not list its skills in `plugin.json`.

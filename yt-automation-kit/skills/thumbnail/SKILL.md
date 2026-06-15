@@ -113,7 +113,7 @@ Show the user the prompt you've crafted and ask if they want to adjust it before
 Run the script with the collected settings:
 
 ```
-python3 "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/skills/thumbnail/generate_thumbnail.py" "<prompt>" \
+python3 "${CLAUDE_SKILL_DIR}/generate_thumbnail.py" "<prompt>" \
   --model <nano-banana-2|nano-banana-pro|seedream> \
   --count <count> \
   --aspect-ratio <ratio> \
