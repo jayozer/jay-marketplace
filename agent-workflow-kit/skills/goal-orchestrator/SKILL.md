@@ -1,148 +1,118 @@
 ---
 name: goal-orchestrator
-description: Turn a broad task into an execution-ready brief, a concrete top-level goal, optional parallel subagent goals, synthesized results, and verification. Use when the user asks to write goals, use /goal, fill a build brief, spawn parallel agents or subagents, or handle complex work through independent workstreams in Claude Code or Codex.
+description: Turn a broad task into a launch-ready fire-and-forget /goal — an airtight, verifiable completion condition with guardrails — then run it autonomously to done; fall back to supervised multi-agent orchestration when a task can't be made verifiable. Use when the user asks to write a goal, use /goal, run something autonomously or fire-and-forget, fill a build brief, spawn parallel agents or subagents, or handle broad work end to end in Claude Code or Codex.
+argument-hint: "[the broad task to turn into a /goal]"
+user-invocable: true
 ---
 
 # Goal Orchestrator
 
-Use this skill to convert a raw request into a clear goal, split independent work across agents when useful, and synthesize the result into one verified answer or artifact.
+Turn a broad request into a **fire-and-forget `/goal`**: one verifiable completion condition the agent works toward autonomously, across turns, until an independent checker confirms it is met. Your job is to make the condition airtight and the run safe — then step back.
 
-The main agent owns the outcome. Subagents provide research, plans, review, or isolated implementation help; they do not replace final judgment.
+`/goal` is a native Claude Code / Codex command (Claude Code v2.1.139+). After each turn a checker model (Haiku by default) reads the transcript and rules *met* / *not-met*; a *not-met* returns its reason as guidance for the next turn. **The checker only sees what the agent wrote in the conversation — it cannot run commands.** A condition is therefore only as good as the evidence it forces the agent to surface. One goal is active at a time; `/goal clear` stops it.
 
-## 1. Fill The Brief
+When a task has no verifiable finish line (open-ended, creative, or unsafe to run unsupervised), do not force it into `/goal` — drop to supervised orchestration (§7).
 
-Translate the user request into a completed brief before dispatching work. Use this universal form:
+## 1. Fill the Brief
+
+Capture the request before writing any condition. Use this universal form:
 
 ```text
 Build or deliver [OUTCOME] in [CONTEXT, TECH, OR FRAMEWORK].
 It should include [CORE DELIVERABLES], with [BEHAVIOR, INTERACTION, WORKFLOW, OR ACCEPTANCE DETAILS].
-Make it feel or meet [QUALITY BAR], using [RELEVANT STYLE, ARCHITECTURE, CONSTRAINTS], [ENVIRONMENT OR INTEGRATION DETAILS], and [FINISHING TOUCHES].
+Make it meet [QUALITY BAR], using [RELEVANT CONSTRAINTS], [ENVIRONMENT OR INTEGRATION DETAILS], and [FINISHING TOUCHES].
 Output as [ARTIFACT OR FORMAT].
 ```
 
-Do not leave bracketed placeholders. Infer conservative defaults from the user's request and the current project. Ask only when a missing detail makes the task impossible, destructive, or materially risky.
+Do not leave bracketed placeholders. Infer conservative defaults from the request and the current project. Ask the user up front only when a missing detail makes the task impossible, destructive, or materially risky — because once `/goal` is running, clarifying questions stall the loop (see §4).
 
-For non-visual tasks, adapt the fields:
+Field meanings:
 
 - `OUTCOME`: the concrete result to produce.
-- `CONTEXT, TECH, OR FRAMEWORK`: the repo, language, toolchain, platform, or domain.
+- `CONTEXT, TECH, OR FRAMEWORK`: repo, language, toolchain, platform, or domain.
 - `CORE DELIVERABLES`: files, features, analysis, fixes, tests, or decisions needed.
-- `BEHAVIOR OR ACCEPTANCE DETAILS`: what must work, how it should behave, and edge cases.
-- `QUALITY BAR`: correctness, maintainability, performance, UX, safety, tone, or evidence standard.
-- `ENVIRONMENT OR INTEGRATION DETAILS`: APIs, data sources, deployment targets, permissions, or constraints.
-- `ARTIFACT OR FORMAT`: code changes, a single file, a report, a PR, a patch, or a final answer.
+- `BEHAVIOR OR ACCEPTANCE DETAILS`: what must work, how it behaves, edge cases.
+- `QUALITY BAR`: correctness, performance, UX, safety, tone, or evidence standard.
+- `ENVIRONMENT OR INTEGRATION DETAILS`: APIs, data sources, deploy targets, permissions.
+- `ARTIFACT OR FORMAT`: code changes, a file, a report, a PR, a patch, or an answer.
 
-Example for a visual build:
+## 2. Is This `/goal`-Shaped?
 
-```text
-Build a first-person roller coaster POV ride in Three.js. It should include a camera traveling along a looping track with drops, banked turns, and at least one inversion, with smooth acceleration on descents and slowing on climbs. Make it feel fast and cinematic, using track geometry, supports, a skybox, terrain below, lighting that sells speed, and sound effects. Output as a single HTML file.
-```
+Fire-and-forget only works when "done" is checkable from the transcript. Confirm all three before continuing; if any fails, go to §7.
 
-## 2. Define The Goal
+- **Verifiable finish line** — done can be proven by a command, exit code, file or count check, or other concrete evidence the agent can print. Not "make it better" or "feels right."
+- **Safe unsupervised** — no destructive, production, financial, or credential actions that need a human in the loop; mistakes are recoverable (git, sandbox, test env).
+- **Bounded** — the work has a realistic end within a turn/token budget, not an open research rabbit hole.
 
-Before substantial work, write a top-level goal with done criteria. Use an actual goal tool or `/goal` workflow only when the user explicitly requested goals or the platform permits skill-driven goal creation. If goal creation is unavailable, blocked by an active goal, or not appropriate, write the goal block into the working plan instead.
+State your call in one line — e.g. "`/goal`-shaped: yes, verified by `pytest -q` exit 0" — so the choice is explicit.
 
-Use this shape:
+## 3. Write the Completion Condition
 
-```text
-/goal [ONE SENTENCE OBJECTIVE]
+This is the heart of the skill. A strong condition has four parts:
 
-Brief:
-[Filled brief.]
+1. **Measurable end state** — the observable result. ("All 3 endpoints return 200 with the documented JSON shape.")
+2. **Verification method that forces evidence into the transcript** — exactly how the agent proves it, run and shown every turn. ("Met only after `npm test` is run and its output showing 0 failures appears in this conversation.")
+3. **Constraints** — what must stay true or unchanged. ("Do not edit `db/migrations/`. Do not add new dependencies.")
+4. **Hard cap** — a turn or time ceiling so a stuck run can't drain tokens. ("Or stop after 40 turns and summarize what's left.")
 
-Done when:
-- [Concrete finishing criterion.]
-- [Concrete finishing criterion.]
-- [Concrete finishing criterion.]
-
-Artifacts:
-- [Expected files, answer, report, PR, or other output.]
-
-Verification:
-- [Smallest reliable checks that prove the result.]
-
-Constraints:
-- [User constraints, repo boundaries, approval limits, and non-goals.]
-```
-
-## 3. Decide Whether To Parallelize
-
-Parallelize only when it will improve speed, quality, or coverage. Do direct work when the task is small, tightly coupled, or likely to create edit conflicts.
-
-Good parallel workstreams:
-
-- Existing-context research: repo structure, prior patterns, docs, APIs, product requirements.
-- Architecture or implementation plan: data flow, module boundaries, migration strategy.
-- Independent implementation shards: separate files, modules, routes, components, tests, or docs.
-- UX, copy, or content pass: interface behavior, wording, examples, polish.
-- Verification pass: tests, edge cases, performance, accessibility, security, regression review.
-
-Avoid parallel agents for:
-
-- One small edit that is faster to do directly.
-- Work that requires multiple agents to modify the same lines or make the same central decision.
-- Secrets, credentials, destructive operations, or production changes unless explicitly authorized.
-- High-stakes claims that cannot be verified from authoritative sources.
-
-Use a practical agent count:
-
-- `0 agents`: trivial or tightly coupled task.
-- `2-4 agents`: most nontrivial tasks with independent research, build, and review tracks.
-- `5+ agents`: only broad tasks with clearly separable subsystems.
-
-## 4. Dispatch Subgoals
-
-When multi-agent or subagent tools exist, dispatch independent work concurrently. When they do not, parallelize safe local inspection commands if useful, then perform the remaining work directly.
-
-Give each agent a self-contained prompt with its own dedicated goal:
+Template:
 
 ```text
-/goal [ONE CLEAR SUBGOAL]
-
-Context:
-[Filled brief.]
-[Relevant repo, files, constraints, user preferences, and current plan.]
-
-Deliverable:
-[Specific output the main agent needs: findings, patch, design, tests, risks, examples, or recommendation.]
-
-Boundaries:
-[Files, modules, decisions, or questions this agent owns.]
-[Files, modules, decisions, or actions this agent must avoid.]
-
-Verification:
-[Checks to run, evidence to collect, or reasoning standard to meet.]
-
-Return format:
-- Summary
-- Evidence or file references
-- Recommendation or produced artifact
-- Verification performed
-- Unknowns or risks
+/goal [ONE-SENTENCE OBJECTIVE].
+Done only when [MEASURABLE END STATE], proven by [VERIFICATION COMMAND/CHECK] with its output shown in this conversation.
+Constraints: [WHAT MUST STAY UNCHANGED]; do not ask clarifying questions — make a reasonable choice and note it.
+Stop after [N] turns if not met and report what remains.
 ```
 
-Keep subgoals non-overlapping. Prefer read-only research agents plus one implementation owner when edit conflicts are likely. For implementation agents, assign explicit file ownership or require patch output instead of direct edits when the platform does not isolate workspaces.
+Good vs. bad:
 
-## 5. Synthesize Results
+- ✅ "Done only when `ruff check .` and `pytest -q` both exit 0, output shown; don't touch `legacy/`; stop after 30 turns." (checkable, evidence forced, capped)
+- ✅ "Turn this screenshot into a working app; met once every feature is tested end-to-end in the browser and the steps are shown." (forces demonstrated evidence)
+- ❌ "Make the codebase cleaner / production-ready." (no finish line — loops, burns tokens)
+- ❌ "Complete the feature." (checker can be fooled by an unproven 'done')
 
-As results return:
+Show the drafted condition to the user before firing.
 
-1. Compare each result against the actual repo, user request, and filled brief.
-2. Verify any claim before relying on it, especially if it affects code, tests, security, legal, financial, medical, or current factual information.
-3. Resolve conflicts explicitly. Prefer evidence from the current workspace over agent opinion.
-4. Apply only the pieces that fit the request and constraints.
-5. Keep edits focused. Avoid unrelated refactors, churn, or speculative extras.
-6. Run the smallest reliable verification that proves the outcome.
+## 4. Pre-Flight (Guardrails)
 
-If an agent produced a patch, inspect it before applying. If multiple agents touched overlapping code, reconcile manually and rerun the relevant checks.
+Before launching, set up for unattended execution:
 
-## 6. Report Back
+- **Trusted workspace** — `/goal` requires a trusted directory; it is blocked in untrusted repos and when hooks are disabled (`disableAllHooks` / `allowManagedHooksOnly`).
+- **Auto-approve tools** — enable auto-accept so permission prompts don't halt the loop, but only once destructive actions are fenced off (below).
+- **No clarifying questions** — the condition must tell the agent to decide and note assumptions rather than stop and ask; any pause ends the walk-away.
+- **Fence danger** — exclude prod/deploy/secret/irreversible actions in the constraints; prefer a branch, git worktree, or sandbox so mistakes are recoverable.
+- **Confirm the cap** — re-check that the turn/time limit from §3 is present.
 
-Final responses should be concise and user-facing:
+## 5. Launch and Walk Away
 
-- State what was produced or changed.
-- Mention the main parallel workstreams only when useful.
-- List verification performed and any checks that could not be run.
-- Call out remaining risks, assumptions, or next steps only when they matter.
+- Fire the condition with `/goal`.
+- **Watch the first ~hour** (or first several turns) for stuck or *acknowledgement* loops — the agent reporting progress while the checker never advances. Kill early if you see one.
+- `/goal clear` (aliases: `stop`, `off`, `reset`, `none`, `cancel`) halts immediately. `--resume` restores the goal in a later session (the turn counter and token baseline reset).
 
-Do not dump every subagent transcript. Summarize the synthesis, not the machinery.
+## 6. On Completion — Verify and Report
+
+When the goal clears, do not take the checker's word as final — it only saw the transcript.
+
+1. **Re-run the real verification yourself** (the §3 command) and read the actual output.
+2. Reconcile against the brief and the repo; if the checker passed but the evidence doesn't hold, reopen the work.
+3. Report concisely: what was produced, the verification you re-ran and its result, turns or cost if notable, and any remaining risks or assumptions the autonomous run made.
+
+## 7. Fallback: Supervised Orchestration
+
+When §2 said the task is **not** `/goal`-shaped, run it yourself with subagents instead of an autonomous loop. The main agent owns the outcome; subagents research, plan, review, or implement in isolation — they do not replace your judgment.
+
+**Parallelize only when it helps** (speed, quality, coverage); do small or tightly coupled work directly. In Claude Code the subagent mechanism is the `Task`/Agent tool — emit all calls in one message to run them concurrently, match the agent type to the subgoal (`Explore` for read-only research, `Plan` for design, `general-purpose` for build/verify), and isolate parallel writers with git worktrees to avoid edit conflicts. See `superpowers:dispatching-parallel-agents`.
+
+Give each agent a self-contained prompt with its own dedicated subgoal:
+
+```text
+[ONE CLEAR SUBGOAL]
+
+Context: [Filled brief + relevant repo, files, constraints, current plan.]
+Deliverable: [Specific output: findings, patch, design, tests, risks, recommendation.]
+Boundaries: [What this agent owns; what it must not touch or decide.]
+Verification: [Checks to run or evidence to collect.]
+Return: summary · evidence/file refs · artifact/recommendation · verification done · unknowns/risks.
+```
+
+Then synthesize: compare each result against the real repo and brief, verify claims before relying on them, reconcile conflicts (workspace evidence beats agent opinion), apply only what fits, and run the smallest reliable check that proves the outcome. Report the synthesis, not the machinery.
