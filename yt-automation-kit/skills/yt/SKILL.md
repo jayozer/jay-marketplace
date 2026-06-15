@@ -157,7 +157,7 @@ After generating all written files, generate thumbnail options using the `/thumb
 
 2. For each prompt, run the thumbnail generator:
    ```
-   python3 ~/.claude/skills/thumbnail/generate_thumbnail.py "<prompt>" --count 1 --resolution 2K --slug <video-slug> --aspect-ratio 16:9
+   python3 "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/skills/thumbnail/generate_thumbnail.py" "<prompt>" --count 1 --resolution 2K --slug <video-slug> --aspect-ratio 16:9
    ```
 
 3. Thumbnails are saved to `~/youtube/thumbnails/<date>-<video-slug>/`

@@ -1,0 +1,13 @@
+{
+  "name": "yt-automation-kit",
+  "description": "Five skills for the YouTube content pipeline: research (yt-search), plan (yt), SEO (seo), thumbnails (thumbnail), and repurposing (repurpose).",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jay Ozer",
+    "email": "jayozer@gmail.com"
+  },
+  "homepage": "https://github.com/jayozer/jay-marketplace/tree/main/yt-automation-kit",
+  "repository": "https://github.com/jayozer/jay-marketplace",
+  "license": "MIT",
+  "keywords": ["youtube", "video", "seo", "thumbnail", "shorts", "content"]
+}
