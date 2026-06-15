@@ -58,6 +58,7 @@ Ask in plain English and include a video path when possible:
 
 The skill defaults to `gemini-3.1-pro-preview` and standard mode. Use quick mode
 for fast overviews and deep mode when you want more careful timestamped analysis.
+Deep mode explicitly sends Gemini's highest Gemini 3 thinking level, `high`.
 
 Manual helper usage:
 
@@ -68,6 +69,17 @@ python3 skills/video-understanding/analyze_video_gemini.py "/path/to/demo.mp4" \
   --output analysis.md \
   --json-output analysis.json
 ```
+
+For maximum reasoning effort:
+
+```bash
+python3 skills/video-understanding/analyze_video_gemini.py "/path/to/demo.mp4" \
+  --question "Explain the important visual changes with timestamps." \
+  --mode deep
+```
+
+You can override the Gemini 3 thinking level with `--thinking-level low`,
+`--thinking-level medium`, or `--thinking-level high`.
 
 For local repo development, a `.env` at the repo root works because the helper
 searches the current directory and its parents. The `.env` file is ignored by

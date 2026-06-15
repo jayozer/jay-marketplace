@@ -14,6 +14,7 @@ from typing import Any
 
 
 DEFAULT_MODEL = "gemini-3.1-pro-preview"
+THINKING_LEVELS = ("low", "medium", "high")
 ENV_KEY_PATTERN = re.compile(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
 SUPPORTED_VIDEO_MIME_TYPES = {
     ".mp4": "video/mp4",
@@ -63,6 +64,16 @@ Answer requirements:
 - If something is uncertain, say that it is uncertain instead of guessing.
 - Prefer a concise timeline for summaries and a focused explanation for direct questions.
 """
+
+
+def build_generation_config(*, mode: str, thinking_level: str | None) -> dict[str, Any]:
+    config: dict[str, Any] = {"temperature": 0.2}
+    level = thinking_level or ("high" if mode == "deep" else None)
+
+    if level:
+        config["thinking_config"] = {"thinking_level": level}
+
+    return config
 
 
 def load_env_files(*, explicit_env_file: Path | None = None) -> list[Path]:
@@ -152,6 +163,7 @@ def analyze_video(
     question: str,
     model: str,
     mode: str,
+    thinking_level: str | None = None,
     markdown_output: Path | None = None,
     json_output: Path | None = None,
     poll_interval_seconds: float = 2,
@@ -179,7 +191,7 @@ def analyze_video(
     response = client.models.generate_content(
         model=model,
         contents=[active_file, prompt],
-        config={"temperature": 0.2},
+        config=build_generation_config(mode=mode, thinking_level=thinking_level),
     )
 
     answer = getattr(response, "text", "") or ""
@@ -267,6 +279,11 @@ def parse_args() -> argparse.Namespace:
         default="standard",
         help="Analysis mode used to shape the prompt",
     )
+    parser.add_argument(
+        "--thinking-level",
+        choices=THINKING_LEVELS,
+        help="Gemini 3 thinking level. Deep mode defaults to high.",
+    )
     parser.add_argument("-o", "--output", type=Path, help="Markdown output path")
     parser.add_argument("--json-output", type=Path, help="JSON output path")
     parser.add_argument("--poll-interval", type=float, default=2)
@@ -287,6 +304,7 @@ def main() -> int:
         question=args.question,
         model=args.model,
         mode=args.mode,
+        thinking_level=args.thinking_level,
         markdown_output=args.output,
         json_output=args.json_output,
         poll_interval_seconds=args.poll_interval,

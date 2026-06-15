@@ -24,7 +24,8 @@ Identify:
 
 Use `standard` mode by default. Use `quick` for fast summaries. Use `deep` when
 the user asks for detailed visual inspection, small on-screen text, complex UI
-changes, or high-confidence timestamped findings.
+changes, or high-confidence timestamped findings. Deep mode explicitly uses
+Gemini's highest Gemini 3 thinking level, `high`.
 
 If the path is missing, ask for it. If the file is in a protected macOS folder
 and cannot be opened, ask the user to move it to an accessible location or grant
@@ -69,6 +70,10 @@ python3 ~/.claude/skills/video-understanding/analyze_video_gemini.py "<video_pat
   --output "<analysis.md>" \
   --json-output "<analysis.json>"
 ```
+
+If the user wants a specific Gemini 3 thinking level, pass
+`--thinking-level low`, `--thinking-level medium`, or `--thinking-level high`.
+For maximum reasoning effort, prefer `--mode deep` or `--thinking-level high`.
 
 If running from the project checkout instead of an installed skill, use:
 
@@ -117,6 +122,7 @@ usage: analyze_video_gemini.py [-h] [-q QUESTION] [--model MODEL]
                                [--poll-interval POLL_INTERVAL]
                                [--timeout TIMEOUT]
                                [--env-file ENV_FILE]
+                               [--thinking-level {low,medium,high}]
                                video_path
 ```
 
@@ -125,6 +131,7 @@ Important options:
 - `--question` / `-q`: question to ask about the video.
 - `--model`: Gemini model, defaulting to `GEMINI_MODEL` or `gemini-3.1-pro-preview`.
 - `--mode`: `quick`, `standard`, or `deep`; shapes the analysis prompt.
+- `--thinking-level`: Gemini 3 thinking level. Deep mode defaults to `high`.
 - `--output`: write Markdown output.
 - `--json-output`: write structured JSON output.
 - `--timeout`: maximum seconds to wait for Gemini file processing.

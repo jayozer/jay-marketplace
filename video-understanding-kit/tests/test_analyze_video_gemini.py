@@ -74,6 +74,19 @@ def test_build_prompt_requests_timestamp_grounded_answer() -> None:
     assert "uncertain" in prompt.lower()
 
 
+def test_generation_config_sets_high_thinking_for_deep_mode() -> None:
+    config = gemini_video.build_generation_config(mode="deep", thinking_level=None)
+
+    assert config["temperature"] == 0.2
+    assert config["thinking_config"] == {"thinking_level": "high"}
+
+
+def test_generation_config_respects_explicit_thinking_level_override() -> None:
+    config = gemini_video.build_generation_config(mode="deep", thinking_level="medium")
+
+    assert config["thinking_config"] == {"thinking_level": "medium"}
+
+
 def test_load_env_files_sets_missing_values_without_overwriting(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -116,6 +129,7 @@ def test_analyze_video_uploads_generates_and_writes_outputs(tmp_path: Path) -> N
         question="Summarize the video.",
         model="gemini-3.1-pro-preview",
         mode="standard",
+        thinking_level=None,
         markdown_output=markdown_path,
         json_output=json_path,
         poll_interval_seconds=0,
@@ -132,7 +146,7 @@ def test_analyze_video_uploads_generates_and_writes_outputs(tmp_path: Path) -> N
     assert contents[0].uri == "gemini://files/video-123"
     assert contents[0].mime_type == "video/mp4"
     assert "Summarize the video." in contents[1]
-    assert config["temperature"] == 0.2
+    assert config == {"temperature": 0.2}
 
     assert result.answer.startswith("00:00")
     assert "gemini-3.1-pro-preview" in markdown_path.read_text()
