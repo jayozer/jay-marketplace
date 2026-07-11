@@ -13,6 +13,25 @@ Turn a broad request into a **fire-and-forget `/goal`**: one verifiable completi
 
 When a task has no verifiable finish line (open-ended, creative, or unsafe to run unsupervised), do not force it into `/goal` — drop to supervised orchestration (§7).
 
+## Platform Adaptation
+
+This skill is written in Claude Code terms; the coding agent already knows which harness it is running in, so take the matching branch.
+
+**Provider API docs — API/SDK goals only.** When the goal builds on the model provider's API or SDK (an agent, an SDK app, tool/function calling, model selection, pricing, caching, or a model/prompt migration), consult the harness-native docs skill *before* writing the condition (§3) so model IDs, API shapes, and limits are grounded rather than guessed. Skip it for goals that don't touch the provider API — test fixes, refactors, UI work.
+
+- **Claude Code** → invoke the `claude-api` skill via the `Skill` tool (Anthropic/Claude model IDs, params, pricing, tool use, MCP, caching, token counting, migration).
+- **Codex** → the `openai-docs` skill loads natively; follow it — it drives the `openaiDeveloperDocs` MCP tools and its bundled helper for OpenAI model selection, API reference, and migration.
+
+**Tool names.** The tool names elsewhere in this skill (notably §7) are Claude Code's. In Codex, translate:
+
+| This skill says | Codex equivalent |
+| --- | --- |
+| `Task` / Agent tool (dispatch a subagent) | `spawn_agent`, then `wait_agent` (needs `multi_agent = true` in `~/.codex/config.toml`) |
+| Several parallel `Task` calls | several `spawn_agent` calls |
+| `TodoWrite` (task tracking) | `update_plan` |
+| `Skill` tool (invoke a skill) | skills load natively — just follow the instructions |
+| `Read` / `Write` / `Edit` / `Bash` | native file and shell tools |
+
 ## 1. Fill the Brief
 
 Capture the request before writing any condition. Use this universal form:
@@ -71,6 +90,10 @@ Good vs. bad:
 - ❌ "Make the codebase cleaner / production-ready." (no finish line — loops, burns tokens)
 - ❌ "Complete the feature." (checker can be fooled by an unproven 'done')
 
+**Ground it first (API/SDK goals).** If the goal builds on the provider's API or SDK, pull the harness-native docs skill before drafting (see Platform Adaptation) — don't pin model IDs, params, or limits the agent only half-remembers into the condition.
+
+**Keep it tight.** Claude Code hard-caps the `/goal` condition at 4000 characters (≈1000 tokens), and the checker re-reads it every turn — so a bloated condition costs tokens each turn and blurs the met/not-met target. If you brush the cap, detail has leaked in: move it to the brief (§1) and working context, which have no such limit, and keep the `/goal` line to the four parts above.
+
 Show the drafted condition to the user before firing.
 
 ## 4. Pre-Flight (Guardrails)
@@ -101,7 +124,7 @@ When the goal clears, do not take the checker's word as final — it only saw th
 
 When §2 said the task is **not** `/goal`-shaped, run it yourself with subagents instead of an autonomous loop. The main agent owns the outcome; subagents research, plan, review, or implement in isolation — they do not replace your judgment.
 
-**Parallelize only when it helps** (speed, quality, coverage); do small or tightly coupled work directly. In Claude Code the subagent mechanism is the `Task`/Agent tool — emit all calls in one message to run them concurrently, match the agent type to the subgoal (`Explore` for read-only research, `Plan` for design, `general-purpose` for build/verify), and isolate parallel writers with git worktrees to avoid edit conflicts. See `superpowers:dispatching-parallel-agents`.
+**Parallelize only when it helps** (speed, quality, coverage); do small or tightly coupled work directly. In Claude Code the subagent mechanism is the `Task`/Agent tool (in Codex, `spawn_agent`/`wait_agent` — see Platform Adaptation) — emit all calls in one message to run them concurrently, match the agent type to the subgoal (`Explore` for read-only research, `Plan` for design, `general-purpose` for build/verify), and isolate parallel writers with git worktrees to avoid edit conflicts. See `superpowers:dispatching-parallel-agents`.
 
 Give each agent a self-contained prompt with its own dedicated subgoal:
 
