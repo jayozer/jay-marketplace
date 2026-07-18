@@ -13,34 +13,55 @@ from typing import Any
 
 from goal_parsing import collect_goals
 
-# Vague references that are not runnable commands.
-NON_COMMANDS = {"the command", "the check", "the appropriate check", "it"}
+# First words that mark a generic reference ("the command", "all checks"),
+# not a runnable command.
+GENERIC_WORDS = {
+    "the", "all", "both", "it", "them", "each", "every",
+    "validation", "checks", "commands", "running", "showing",
+}
 
 
-def extract_verification_command(verification: str | None) -> str | None:
-    """Extract the runnable command from a verification clause.
+def _plausible_command(candidate: str) -> str | None:
+    candidate = re.sub(r"^running\s+", "", candidate.strip(), flags=re.IGNORECASE)
+    if not candidate or candidate.split()[0].lower() in GENERIC_WORDS:
+        return None
+    if candidate.startswith("["):  # template placeholder like [TEST SUITE]
+        return None
+    return candidate
 
-    Handles the kit's canonical style ('npm test exits 0 ... proven by running
-    npm test ...') as well as backticked commands.
+
+def extract_verification_commands(verification: str | None) -> list[str]:
+    """Extract the runnable commands from a verification clause.
+
+    Handles the kit's canonical styles, including multi-check clauses like
+    'pytest -q exits 0, ruff check . passes, and npm run coverage shows 80%+
+    coverage, proven by running all checks ...', as well as backticked commands.
     """
     if not verification:
-        return None
+        return []
 
-    match = re.search(r"`([^`]+)`", verification)
-    if match:
-        return match.group(1).strip()
+    backticked = [cmd.strip() for cmd in re.findall(r"`([^`]+)`", verification)]
+    if backticked:
+        return list(dict.fromkeys(backticked))
 
-    match = re.search(r"^(?:running\s+)?(.+?)\s+exits 0", verification, re.IGNORECASE)
-    if not match:
-        match = re.search(
-            r"proven by running\s+(.+?)(?:\s+and\s+|,|$)", verification, re.IGNORECASE
-        )
-    if match:
-        command = match.group(1).strip()
-        if command.lower() not in NON_COMMANDS:
-            return command
+    candidates: list[str] = []
+    for segment in re.split(r"[,;]\s*(?:and\s+)?|\s+and\s+", verification):
+        match = re.match(
+            r"(?:proven by running\s+)?(.+?)\s+(?:exits 0|passes\b|shows\b)",
+            segment,
+            re.IGNORECASE,
+        ) or re.match(r"proven by running\s+(.+)$", segment, re.IGNORECASE)
+        command = _plausible_command(match.group(1)) if match else None
+        if not command:
+            continue
+        # Keep the most complete form: drop prefixes of commands already kept
+        # ('spectral lint' vs 'spectral lint openapi.yaml') and vice versa.
+        if any(kept.startswith(command) for kept in candidates):
+            continue
+        candidates = [kept for kept in candidates if not command.startswith(kept)]
+        candidates.append(command)
 
-    return None
+    return candidates
 
 
 def test_verification_command(command: str, cwd: Path | None = None) -> dict[str, Any]:
@@ -86,7 +107,7 @@ def analyze_goal(goal: dict[str, Any]) -> dict[str, Any]:
         "has_verification": goal["verification"] is not None,
         "has_constraints": bool(goal["constraints"]),
         "has_turn_limit": goal["turn_limit"] is not None,
-        "verification_command": extract_verification_command(goal["verification"]),
+        "verification_commands": extract_verification_commands(goal["verification"]),
         "estimated_complexity": estimate_complexity(goal),
         "issues": [],
         "suggestions": [],
@@ -105,9 +126,8 @@ def analyze_goal(goal: dict[str, Any]) -> dict[str, Any]:
     if not analysis["has_turn_limit"]:
         analysis["suggestions"].append("Consider adding a turn limit to prevent token drain")
 
-    if analysis["verification_command"]:
+    for cmd in analysis["verification_commands"]:
         # Check if command looks executable
-        cmd = analysis["verification_command"]
         if not any(char in cmd for char in [" ", "-", "/"]):
             analysis["issues"].append(f"Verification command '{cmd}' may not be a valid command")
 
@@ -168,13 +188,13 @@ def main() -> int:
     if args.test_commands:
         results: dict[str, dict[str, Any]] = {}
         for analysis in analyses:
-            command = analysis.get("verification_command")
-            if not command:
-                continue
-            if command not in results:
-                print(f"Running verification command: {command}", file=sys.stderr)
-                results[command] = test_verification_command(command, args.cwd)
-            analysis["command_test"] = results[command]
+            for command in analysis["verification_commands"]:
+                if command not in results:
+                    print(f"Running verification command: {command}", file=sys.stderr)
+                    results[command] = test_verification_command(command, args.cwd)
+            analysis["command_tests"] = [
+                results[command] for command in analysis["verification_commands"]
+            ]
 
     # Generate report
     total_goals = len(analyses)

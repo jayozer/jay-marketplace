@@ -56,9 +56,11 @@ if python3 "$KIT/scripts/benchmark_goals.py" "$KIT/examples/goal-templates" > "$
 import json, sys
 r = json.load(sys.stdin)
 assert r["summary"]["goals_with_issues"] == 0, r["summary"]
-cmds = [a["verification_command"] for a in r["analyses"]]
-assert "npm test" in cmds, cmds
-print("  ", r["summary"]["total_goals"], "goals, 0 issues, commands extracted")
+cmds = {c for a in r["analyses"] for c in a["verification_commands"]}
+# refactor.md and test-suite.md carry multi-check clauses; every command must survive.
+for expected in ("npm test", "pytest -q", "ruff check .", "npm run coverage"):
+    assert expected in cmds, (expected, sorted(cmds))
+print("  ", r["summary"]["total_goals"], "goals, 0 issues, multi-check commands extracted")
 ' < "$TMP/bench.json"; then ok; else bad "benchmark summary wrong"; fi
 else bad "benchmark exited nonzero on own templates"; fi
 
@@ -69,7 +71,7 @@ if python3 "$KIT/scripts/benchmark_goals.py" \
     --test-commands 2>/dev/null | python3 -c '
 import json, sys
 r = json.load(sys.stdin)
-tests = {a["verification_command"]: a["command_test"] for a in r["analyses"]}
+tests = {t["command"]: t for a in r["analyses"] for t in a.get("command_tests", [])}
 assert tests["echo hello"]["can_run"] and tests["echo hello"]["exit_code"] == 0
 assert not tests["definitely-not-a-cmd-xyz"]["can_run"]
 assert tests["definitely-not-a-cmd-xyz"]["exit_code"] == 127
