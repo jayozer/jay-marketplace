@@ -9,7 +9,7 @@ user-invocable: true
 
 Turn a broad request into a **fire-and-forget `/goal`**: one verifiable completion condition the agent works toward autonomously, across turns, until an independent checker confirms it is met. Your job is to make the condition airtight and the run safe — then step back.
 
-`/goal` is a native Claude Code / Codex command (Claude Code v2.1.139+). After each turn a checker model (Haiku by default) reads the transcript and rules *met* / *not-met*; a *not-met* returns its reason as guidance for the next turn. **The checker only sees what the agent wrote in the conversation — it cannot run commands.** A condition is therefore only as good as the evidence it forces the agent to surface. One goal is active at a time; `/goal clear` stops it.
+`/goal` is a native Claude Code command (v2.1.139+); Codex has no equivalent — there, use supervised orchestration (§7). After each turn a checker model (Haiku by default) reads the transcript and rules *met* / *not-met*; a *not-met* returns its reason as guidance for the next turn. **The checker only sees what the agent wrote in the conversation — it cannot run commands.** A condition is therefore only as good as the evidence it forces the agent to surface. One goal is active at a time; `/goal clear` stops it.
 
 When a task has no verifiable finish line (open-ended, creative, or unsafe to run unsupervised), do not force it into `/goal` — drop to supervised orchestration (§7).
 
@@ -22,15 +22,30 @@ This skill is written in Claude Code terms; the coding agent already knows which
 - **Claude Code** → invoke the `claude-api` skill via the `Skill` tool (Anthropic/Claude model IDs, params, pricing, tool use, MCP, caching, token counting, migration).
 - **Codex** → the `openai-docs` skill loads natively; follow it — it drives the `openaiDeveloperDocs` MCP tools and its bundled helper for OpenAI model selection, API reference, and migration.
 
-**Tool names.** The tool names elsewhere in this skill (notably §7) are Claude Code's. In Codex, translate:
+### Tool Name Translation
+
+The tool names elsewhere in this skill (notably §7) are Claude Code's. In Codex, translate:
 
 | This skill says | Codex equivalent |
 | --- | --- |
 | `Task` / Agent tool (dispatch a subagent) | `spawn_agent`, then `wait_agent` (needs `multi_agent = true` in `~/.codex/config.toml`) |
-| Several parallel `Task` calls | several `spawn_agent` calls |
+| Several parallel `Task` calls | several `spawn_agent` calls (spawn all before calling `wait_agent` — they run concurrently) |
 | `TodoWrite` (task tracking) | `update_plan` |
 | `Skill` tool (invoke a skill) | skills load natively — just follow the instructions |
 | `Read` / `Write` / `Edit` / `Bash` | native file and shell tools |
+
+### Platform Notes
+
+**Claude Code** — `/goal` is native (v2.1.139+); the checker model is Haiku by default. Fire-and-forget needs a trusted workspace and auto-approved tools (see §4).
+
+**Codex** — no `/goal` equivalent: always use supervised orchestration (§7). Subagents need `multi_agent = true` in `~/.codex/config.toml`; skills load natively. Codex has no named agent types (`Explore`, `Plan`, `general-purpose` are Claude Code's) — put the role in each agent's prompt instead:
+
+```text
+spawn_agent [read-only research prompt, e.g. "Research auth patterns in this codebase and recommend an approach. Do not implement."]
+spawn_agent [implementation prompt, e.g. "Implement the recommended approach. Run npm test and show the results."]
+wait_agent
+wait_agent
+```
 
 ## 1. Fill the Brief
 
