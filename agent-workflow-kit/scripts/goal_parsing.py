@@ -61,7 +61,7 @@ def find_goal_blocks(text: str) -> list[str]:
     while i < len(lines):
         stripped = lines[i].strip()
         rest = stripped[len("/goal ") :].strip() if stripped.startswith("/goal ") else ""
-        first_word = rest.split()[0].lower() if rest else ""
+        first_word = rest.split()[0] if rest else ""
         if not rest or first_word in GOAL_SUBCOMMANDS:
             i += 1
             continue

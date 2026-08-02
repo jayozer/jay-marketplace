@@ -66,6 +66,28 @@ Verification:
         text = "\n".join(f"/goal {command}" for command in commands)
         self.assertEqual(extract_goals_from_text(text), [])
 
+    def test_capitalized_lifecycle_verbs_remain_valid_objectives(self) -> None:
+        text = "\n".join(
+            (
+                "/goal Edit the README",
+                "/goal Pause background jobs during deployment",
+                "/goal Resume interrupted uploads",
+                "/goal Clear stale cache entries",
+                "/goal Stop retry loops",
+            )
+        )
+
+        self.assertEqual(
+            [goal["objective"] for goal in extract_goals_from_text(text)],
+            [
+                "Edit the README",
+                "Pause background jobs during deployment",
+                "Resume interrupted uploads",
+                "Clear stale cache entries",
+                "Stop retry loops",
+            ],
+        )
+
     def test_manual_review_is_valid_verification(self) -> None:
         goal = parse_goal(
             "Prepare the decision memo.\n"
