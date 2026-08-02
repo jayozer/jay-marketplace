@@ -40,8 +40,13 @@ def extract_verification_commands(verification: str | None) -> list[str]:
     if not verification:
         return []
 
-    backticked = [cmd.strip() for cmd in re.findall(r"`([^`]+)`", verification)]
-    if backticked:
+    raw_backticked = re.findall(r"`([^`]+)`", verification)
+    backticked = [
+        command
+        for candidate in raw_backticked
+        if (command := _plausible_command(candidate)) is not None
+    ]
+    if raw_backticked:
         return list(dict.fromkeys(backticked))
 
     candidates: list[str] = []
@@ -104,9 +109,11 @@ def analyze_goal(goal: dict[str, Any]) -> dict[str, Any]:
     analysis = {
         **goal,
         "has_objective": bool(goal["objective"]),
+        "has_done_when": bool(goal["done_when"]),
         "has_verification": goal["verification"] is not None,
         "has_constraints": bool(goal["constraints"]),
         "has_turn_limit": goal["turn_limit"] is not None,
+        "within_character_limit": goal["character_count"] <= 4000,
         "verification_commands": extract_verification_commands(goal["verification"]),
         "estimated_complexity": estimate_complexity(goal),
         "issues": [],
@@ -117,14 +124,17 @@ def analyze_goal(goal: dict[str, Any]) -> dict[str, Any]:
     if not analysis["has_objective"]:
         analysis["issues"].append("Missing clear objective")
 
+    if not analysis["has_done_when"]:
+        analysis["issues"].append("Missing measurable completion criteria")
+
     if not analysis["has_verification"]:
         analysis["issues"].append("Missing verification method")
 
+    if not analysis["within_character_limit"]:
+        analysis["issues"].append("Goal body exceeds Codex's 4,000-character limit")
+
     if not analysis["has_constraints"]:
         analysis["suggestions"].append("Consider adding constraints to fence dangerous actions")
-
-    if not analysis["has_turn_limit"]:
-        analysis["suggestions"].append("Consider adding a turn limit to prevent token drain")
 
     for cmd in analysis["verification_commands"]:
         # Check if command looks executable
@@ -138,6 +148,7 @@ def estimate_complexity(goal: dict[str, Any]) -> str:
     """Estimate the complexity of a goal based on its content."""
     complexity_score = min(len(goal["goal"]) // 100, 5)
     complexity_score += min(len(goal["constraints"]), 3)
+    complexity_score += min(len(goal["done_when"]), 3)
     if goal["verification"] and " and " in goal["verification"].lower():
         complexity_score += 1
 
@@ -200,12 +211,18 @@ def main() -> int:
     total_goals = len(analyses)
     goals_with_issues = sum(1 for a in analyses if a["issues"])
     goals_with_verification = sum(1 for a in analyses if a["has_verification"])
+    goals_with_done_when = sum(1 for a in analyses if a["has_done_when"])
+    goals_within_character_limit = sum(
+        1 for a in analyses if a["within_character_limit"]
+    )
 
     report = {
         "summary": {
             "total_goals": total_goals,
             "goals_with_issues": goals_with_issues,
             "goals_with_verification": goals_with_verification,
+            "goals_with_done_when": goals_with_done_when,
+            "goals_within_character_limit": goals_within_character_limit,
             "complexity_breakdown": {
                 "low": sum(1 for a in analyses if a["estimated_complexity"] == "low"),
                 "medium": sum(1 for a in analyses if a["estimated_complexity"] == "medium"),

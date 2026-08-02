@@ -2,11 +2,11 @@
 
 ## When to Use
 
-Use this pattern when test coverage is critical and you want to ensure quality from the start.
+Use this pattern during an explicitly requested run when test coverage is critical and should drive implementation.
 
 ## Pattern
 
-Split work into test-writing and implementation phases, with tests driving the development.
+Split work into sequential test-writing and implementation phases. Keep later implementation from changing or weakening the approved regression contract without main-agent review.
 
 ## Example: Building a Payment Processing Service
 
@@ -54,7 +54,7 @@ Return: summary · integration code · documentation · integration test results
 
 After all subgoals complete:
 1. Verify all tests still pass
-2. Run integration tests with real payment gateway (staging)
+2. Run deterministic integration tests with the approved sandbox or mock gateway
 3. Review test coverage is adequate
 4. Document any test modifications or gaps
 5. Create test maintenance guide

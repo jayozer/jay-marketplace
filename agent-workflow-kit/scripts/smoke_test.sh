@@ -31,26 +31,31 @@ if [ ${#VALIDATOR[@]} -eq 0 ]; then
     echo "   SKIP: PyYAML not installed"
 elif "${VALIDATOR[@]}" "$KIT/scripts/validate_skills.py" --check-content; then ok; else bad "--check-content"; fi
 
-step "3. extract_goal.py parses every goal template fully"
+step "3. Standard-library parser and benchmark regressions"
+if python3 -m unittest discover -s "$KIT/tests" -p 'test_*.py'; then ok; else bad "unittest regressions"; fi
+
+step "4. extract_goal.py parses every goal template fully"
 if python3 "$KIT/scripts/extract_goal.py" "$KIT/examples/goal-templates" | python3 -c '
 import json, sys
 goals = json.load(sys.stdin)
 assert goals, "no goals found in goal-templates/"
-missing = [g["source_file"] for g in goals if not (g["verification"] and g["turn_limit"])]
-assert not missing, f"goals missing verification/turn limit: {missing}"
-print(f"   {len(goals)} goals, all with verification + turn limit")
+missing = [g["source_file"] for g in goals if not (g["done_when"] and g["verification"])]
+oversized = [g["source_file"] for g in goals if g["character_count"] > 4000]
+assert not missing, f"goals missing completion criteria or verification: {missing}"
+assert not oversized, f"goals over 4,000 characters: {oversized}"
+print(f"   {len(goals)} goals, all measurable, verifiable, and within 4,000 characters")
 '; then ok; else bad "extract_goal.py on goal-templates/"; fi
 
-step "4. Prose mentions of /goal are not treated as goals"
-printf 'Run `/goal clear` and retry.\n/goal clear\nsee skills/goal-orchestrator\n/goal-templates/ is a dir\n' > "$TMP/prose.md"
+step "5. Goal lifecycle commands and prose are not treated as goals"
+printf 'Run `/goal clear` and retry.\n/goal edit new objective\n/goal pause\n/goal resume\n/goal clear\n/goal --resume\nsee skills/goal-orchestrator\n/goal-templates/ is a dir\n' > "$TMP/prose.md"
 OUT="$(python3 "$KIT/scripts/extract_goal.py" "$TMP/prose.md" 2>&1)"
 if echo "$OUT" | grep -q "No goals found"; then ok; else bad "junk goals extracted from prose"; fi
 
-step "5. A typo'd filename is an error, not silent goal text"
+step "6. A typo'd filename is an error, not silent goal text"
 OUT="$(python3 "$KIT/scripts/extract_goal.py" no-such-file.md 2>&1)"
 if echo "$OUT" | grep -q "input not found"; then ok; else bad "missing file not reported"; fi
 
-step "6. benchmark_goals.py passes the kit's own templates"
+step "7. benchmark_goals.py passes the kit's own templates"
 if python3 "$KIT/scripts/benchmark_goals.py" "$KIT/examples/goal-templates" > "$TMP/bench.json"; then
     if python3 -c '
 import json, sys
@@ -64,10 +69,10 @@ print("  ", r["summary"]["total_goals"], "goals, 0 issues, multi-check commands 
 ' < "$TMP/bench.json"; then ok; else bad "benchmark summary wrong"; fi
 else bad "benchmark exited nonzero on own templates"; fi
 
-step "7. --test-commands runs real commands and flags missing ones (exit 127)"
+step "8. --test-commands runs real commands and flags missing ones (exit 127)"
 if python3 "$KIT/scripts/benchmark_goals.py" \
-    "/goal A. Done only when echo hello exits 0, proven by running echo hello. Stop after 5 turns." \
-    "/goal B. Done only when definitely-not-a-cmd-xyz exits 0, proven by running it. Stop after 5 turns." \
+    "/goal A. Done only when echo hello exits 0, proven by running echo hello." \
+    "/goal B. Done only when definitely-not-a-cmd-xyz exits 0, proven by running it." \
     --test-commands 2>/dev/null | python3 -c '
 import json, sys
 r = json.load(sys.stdin)
@@ -78,7 +83,7 @@ assert tests["definitely-not-a-cmd-xyz"]["exit_code"] == 127
 print("   echo ran; missing command reported as not runnable")
 '; then ok; else bad "--test-commands behavior"; fi
 
-step "8. generate_brief.py: empty package.json fields must not clobber README values"
+step "9. generate_brief.py emits the Codex brief without clobbering README values"
 mkdir -p "$TMP/proj"
 printf '# MyProject\n\nA great CLI tool.\n\nTech Stack: React, Express\n\n## Features\n\n- Fast\n- Reliable\n' > "$TMP/proj/README.md"
 printf '{"dependencies": {"lodash": "^4.0.0"}}\n' > "$TMP/proj/package.json"
@@ -87,16 +92,17 @@ if python3 "$KIT/scripts/generate_brief.py" "$TMP/proj" | python3 -c '
 import sys
 brief = sys.stdin.read()
 for needle in ("**Name:** MyProject", "**Description:** A great CLI tool.",
-               "React, Express", "Fast, Reliable"):
+               "React, Express", "Fast, Reliable", "## Goal", "## Context",
+               "## Output", "## Boundaries", "## Verification"):
     assert needle in brief, f"missing: {needle}"
 print("   name/description/tech stack/features all survive merging")
 '; then ok; else bad "generate_brief merge"; fi
 
-step "9. Directory scans skip node_modules and hidden dirs"
+step "10. Directory scans skip node_modules and hidden dirs"
 mkdir -p "$TMP/scan/node_modules" "$TMP/scan/.hidden"
-printf '/goal Vendor. Done only when x exits 0. Stop after 5 turns.\n' > "$TMP/scan/node_modules/v.md"
-printf '/goal Hidden. Done only when x exits 0. Stop after 5 turns.\n' > "$TMP/scan/.hidden/h.md"
-printf '/goal Real goal. Done only when echo ok exits 0, proven by running it. Stop after 5 turns.\n' > "$TMP/scan/real.md"
+printf '/goal Vendor. Done only when x exits 0.\n' > "$TMP/scan/node_modules/v.md"
+printf '/goal Hidden. Done only when x exits 0.\n' > "$TMP/scan/.hidden/h.md"
+printf '/goal Real goal. Done only when echo ok exits 0, proven by running it.\n' > "$TMP/scan/real.md"
 if python3 "$KIT/scripts/extract_goal.py" "$TMP/scan" | python3 -c '
 import json, sys
 goals = json.load(sys.stdin)

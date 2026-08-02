@@ -3,19 +3,21 @@
 ## Template
 
 ```
-Build or deliver [API ENDPOINT/SERVICE] in [BACKEND FRAMEWORK/PROJECT].
-It should include [ENDPOINT DEFINITIONS], with [REQUEST/RESPONSE SCHEMAS], [AUTHENTICATION/AUTHORIZATION], and [ERROR HANDLING].
-Make it meet [API DESIGN STANDARDS], using [DATABASE/ORM], [VALIDATION LIBRARY], and [DOCUMENTATION FORMAT].
-Output as [CONTROLLER CODE/MIGRATIONS/API DOCS].
+Goal: Deliver [API ENDPOINT/SERVICE].
+Context: [BACKEND FRAMEWORK/PROJECT], [CURRENT API], [DATABASE/ORM].
+Output: [CONTROLLER CODE/MIGRATIONS/API DOCS] covering [ENDPOINTS], [SCHEMAS], [AUTHORIZATION], and [ERROR HANDLING].
+Boundaries: Preserve [COMPATIBILITY/PROTECTED FILES]; require approval for [DEPLOYMENT/PUBLICATION].
+Verification: [FOCUSED TESTS], [FULL SUITE], [OPENAPI/LINT CHECK], and direct response-shape review.
 ```
 
 ## Example: User Authentication API
 
 ```
-Build or deliver user authentication API in Express.js/Node.js application.
-It should include login, signup, password reset, and token refresh endpoints, with JWT authentication, bcrypt password hashing, rate limiting, and comprehensive error responses.
-Make it meet REST API best practices and OpenAPI 3.0 specification, using PostgreSQL with Prisma ORM, Joi validation, and Swagger documentation.
-Output as Express route handlers, Prisma schema migrations, and OpenAPI specification.
+Goal: Deliver a user authentication API in the existing Express.js application.
+Context: Node.js, PostgreSQL with Prisma, Joi validation, and the current user model.
+Output: Login, signup, password-reset, and token-refresh handlers with authorization, rate limiting, error responses, and OpenAPI 3.0 documentation.
+Boundaries: Preserve existing authentication contracts and migration history; do not deploy or publish.
+Verification: Run focused and full API tests, lint the OpenAPI document, and review every documented response against the routes.
 ```
 
 ## Field Explanations

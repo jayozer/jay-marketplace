@@ -171,14 +171,13 @@ def generate_brief(project_dir: Path, task_description: str = "") -> str:
     tech_stack = ", ".join(project_info.get("tech_stack") or ["Unknown"])
     key_features = ", ".join(project_info.get("key_features") or ["None specified"])
 
-    brief = f"""# Brief Template
+    brief = f"""# Execution-Ready Brief
 
-Build or deliver [TASK DESCRIPTION] in {name}.
-It should include [CORE DELIVERABLES], with [BEHAVIOR/INTERACTION DETAILS].
-Make it meet [QUALITY BAR], using [RELEVANT CONSTRAINTS], [ENVIRONMENT OR INTEGRATION DETAILS], and [FINISHING TOUCHES].
-Output as [ARTIFACT OR FORMAT].
+## Goal
 
-## Project Context
+{task_description if task_description else '[Describe the specific outcome to produce]'}
+
+## Context
 
 **Name:** {project_info.get('name') or 'Unknown'}
 
@@ -188,27 +187,30 @@ Output as [ARTIFACT OR FORMAT].
 
 **Key Features:** {key_features}
 
-## Task Description
+Relevant current behavior, files, sources, or environment details:
 
-{task_description if task_description else '[Specify the task or feature to build]'}
+[Add only context that changes execution]
 
-## Field Explanations
+## Output
 
-- **TASK DESCRIPTION:** The specific outcome to produce
-- **CORE DELIVERABLES:** Files, features, analysis, fixes, or decisions needed
-- **BEHAVIOR/INTERACTION DETAILS:** What must work, how it behaves, edge cases
-- **QUALITY BAR:** Correctness, performance, UX, safety, tone, or evidence standard
-- **RELEVANT CONSTRAINTS:** What must stay unchanged; fenced-off files or actions
-- **ENVIRONMENT OR INTEGRATION DETAILS:** APIs, data sources, deploy targets, permissions
-- **FINISHING TOUCHES:** Polish, docs, or cleanup that rounds out the deliverable
-- **ARTIFACT OR FORMAT:** Code changes, a file, a report, a PR, a patch, or an answer
+[List the required code, files, report, artifact, or user-facing result]
+
+## Boundaries
+
+- [State scope, compatibility requirements, approval limits, and non-goals]
+- [State what must remain unchanged]
+
+## Verification
+
+- [Name the focused tests, observations, measurements, or review criteria]
+- [Name the broader regression check when applicable]
+- [Include final artifact or diff review]
 
 ## Next Steps
 
-1. Fill in the [BRACKETED PLACEHOLDERS] with specific details
-2. Remove any placeholder text
-3. Add any missing context specific to this task
-4. Use this brief to create a goal condition or supervised orchestration plan
+1. Replace every bracketed placeholder with task-specific detail.
+2. Confirm the work is verifiable, safe and authorized, and bounded.
+3. Draft the native goal or choose a supervised workflow.
 """
 
     return brief

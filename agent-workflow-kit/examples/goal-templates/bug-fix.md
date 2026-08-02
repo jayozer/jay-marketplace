@@ -26,18 +26,34 @@ Output as code changes with test cases and performance benchmarks.
 
 ```
 /goal Fix [BUG DESCRIPTION] without introducing regressions.
-Done only when [VERIFICATION COMMAND] exits 0 with all tests passing, proven by running the command and showing its output in this conversation.
-Constraints: Make minimal changes; do not modify unrelated code; add regression test for this specific bug.
-Stop after 20 turns if not met and report what remains.
+
+Done when:
+- The bug's original reproduction no longer fails.
+- A deterministic regression test covers the failure.
+
+Constraints:
+- Make minimal changes and do not modify unrelated code.
+
+Verification:
+- `[VERIFICATION COMMAND]` exits 0.
+- The final diff contains no unrelated changes.
 ```
 
 ## Example Goal Condition
 
 ```
 /goal Fix memory leak in image processing module when processing large files.
-Done only when pytest -q tests/test_image_processing.py exits 0 with all tests passing, proven by running the command and showing its output in this conversation.
-Constraints: Make minimal changes; do not modify unrelated modules; add regression test for large file processing.
-Stop after 20 turns if not met and report what remains.
+
+Done when:
+- Large-file processing closes every opened resource.
+- A regression test proves repeated processing does not leak handles.
+
+Constraints:
+- Make minimal changes and do not modify unrelated modules.
+
+Verification:
+- `pytest -q tests/test_image_processing.py` exits 0.
+- The original reproduction and final diff are reviewed.
 ```
 
 ## Verification Methods
@@ -63,7 +79,8 @@ Stop after 20 turns if not met and report what remains.
 - [ ] Expected behavior is defined
 - [ ] Test suite passes before fix
 - [ ] Regression test can be added
-- [ ] Turn limit set appropriately (15-25 turns for focused fixes)
+- [ ] Goal body is within 4,000 characters
+- [ ] Commit, push, deployment, and publication authority are explicit
 
 ## Subgoal Splitting Pattern
 
@@ -83,7 +100,7 @@ If the goal loops without progress:
 1. Verify the bug is actually reproducible in current environment
 2. Check if test suite has flaky tests
 3. Break into supervised orchestration with manual investigation
-4. Run `/goal clear` and restart with more specific verification
+4. Use `/goal edit`, `/goal pause`, or `/goal clear` if the user wants to revise or stop it
 
 ## Minimal Change Principle
 

@@ -1,212 +1,187 @@
 # Agent Workflow Kit
-**Claude Code and Codex-compatible skills for turning big requests into clear goals, parallel subgoals, and verified results.**
 
-> These are agent workflow skills. They are separate from product-specific kits like the YouTube Automation Kit, so you can reuse them across coding, research, design, and build tasks.
+**Codex-first workflow tools for turning broad requests into safe, measurable goals and verified results.**
 
----
+> Native Codex `/goal` is the persistence and execution engine. `$goal-orchestrator` is the planner and project manager that prepares work for that engine.
 
-## What This Is For
+## What This Kit Does
 
-Use this kit when a request is too broad to handle as one unstructured prompt.
-It helps the agent create a filled brief, define what done means, split work
-into independent subgoals where useful, and synthesize the final result with
-verification.
+Use the kit when a request needs more structure before long-running execution. It helps Codex:
 
-It is not tied to YouTube, video, or any single product workflow.
+- inspect the actual workspace before defining the work;
+- turn a broad request into an execution-ready brief;
+- decide whether the task is verifiable, safe and authorized, and bounded;
+- draft a native Codex goal with measurable completion criteria;
+- launch the goal only when the user explicitly requests execution;
+- coordinate independent subagents during an explicit run when useful; and
+- verify the real result before completion.
 
-## Before You Start
+The skill works across coding, research, documentation, design, and other bounded workflows. It does not grant permissions, publish changes, or make unsafe work autonomous.
 
-- **Claude Code or Codex** — the skill is written to work in either environment.
-- **Python 3** — only needed for local validation and helper scripts.
-- **PyYAML** — only needed if you want to validate the skills locally: run `pip install -r requirements-dev.txt`.
+## Choose the Smallest Workflow
 
----
+| Situation | Use |
+| --- | --- |
+| The outcome, scope, constraints, and verification are already clear | Native `/goal` |
+| The request is broad or its finish line still needs definition | `$goal-orchestrator` |
+| The task is small, conversational, or open-ended | A normal Codex prompt |
+| The work needs production, destructive, credential, financial, or publication approval | Supervised work with explicit approval points |
 
-## What's In Here
+### Use `/goal` Directly
 
-- `skills/goal-orchestrator` — turn a broad task into a filled brief, a top-level goal, parallel subgoals when useful, synthesized results, and verification.
-- `examples/` — pre-built templates and patterns for common workflows:
-  - `goal-templates/` — Ready-to-use goal templates for feature builds, bug fixes, test suites, documentation, and refactoring
-  - `brief-templates/` — Domain-specific brief templates for web development, API development, data pipelines, and ML
-  - `subgoal-patterns/` — Common subgoal decomposition patterns (layered architecture, feature-by-feature, test-driven, research-then-build)
-- `scripts/` — Helper utilities for goal management:
-  - `validate_skills.py` — Validate skill frontmatter and content structure
-  - `extract_goal.py` — Extract goal patterns from files or text
-  - `benchmark_goals.py` — Test goal conditions for quality and checkability
-  - `generate_brief.py` — Auto-generate briefs from project context
+Use native Goal mode for an already-understood, bounded task:
 
-## Install
+```text
+/goal Fix password-reset token expiration without changing the database schema.
 
-For Claude Code:
+Done when:
+- Expired tokens are rejected and valid tokens still work.
+- A regression test covers both cases.
 
-1. Find or create your skills folder: `~/.claude/skills/`
-2. Copy each folder from `skills/` into it, so you have `~/.claude/skills/goal-orchestrator/`
-3. Start or restart Claude Code so it picks up the new skill.
+Constraints:
+- Do not add dependencies, commit, push, or deploy.
 
-For Codex:
-
-1. Copy each folder from `skills/` into your Codex skills folder.
-2. Restart Codex if needed so it refreshes available skills.
-
-## How To Use It
-
-Ask in plain English:
-
-- "Write a goal and use parallel agents for this build."
-- "Turn this request into a proper goal with subgoals."
-- "Fill the build brief, create a top-level goal, and split the work across agents."
-- "Use goal orchestration for this task."
-
-## Common Patterns
-
-### Feature Development
-
-Use the feature-build goal template for new features:
-
-```bash
-# Reference the template
-cat examples/goal-templates/feature-build.md
-
-# Apply to your task
-/goal Implement user authentication system with login, signup, password reset, and session management.
-Done only when npm test exits 0 with all authentication tests passing, proven by running npm test and showing its output in this conversation.
-Constraints: Do not edit existing migration files (add new migrations as needed); do not add new npm packages without justification; follow existing Express.js middleware patterns.
-Stop after 30 turns if not met and report what remains.
+Verification:
+- Run the focused authentication tests and the full test suite.
+- Review the final diff for unrelated changes.
 ```
 
-### Bug Fixes
+### Use `$goal-orchestrator`
 
-Use the bug-fix goal template for focused fixes:
+Use the skill when Codex needs to discover what done means:
 
-```bash
-# Reference the template
-cat examples/goal-templates/bug-fix.md
-
-# Apply to your task
-/goal Fix memory leak in image processing module when processing large files.
-Done only when pytest -q tests/test_image_processing.py exits 0 with all tests passing, proven by running the command and showing its output in this conversation.
-Constraints: Make minimal changes; do not modify unrelated modules; add regression test for large file processing.
-Stop after 20 turns if not met and report what remains.
+```text
+Use $goal-orchestrator to turn the authentication redesign into an execution-ready brief and native Codex goal. Draft it, but do not start it.
 ```
 
-### Parallel Subgoals
+To authorize execution, say so explicitly:
 
-Split complex work using subgoal patterns:
-
-```bash
-# Use layered architecture pattern
-cat examples/subgoal-patterns/layered-architecture.md
-
-# Or feature-by-feature pattern
-cat examples/subgoal-patterns/feature-by-feature.md
+```text
+Use $goal-orchestrator to prepare and run this work end to end. Use independent subagents only where they materially help, and do not commit or push.
 ```
 
-## Troubleshooting
+That launches in the current task by default. To route the run elsewhere, request a separate task explicitly:
 
-### Goal Stuck in Acknowledgement Loop
-
-If the goal keeps reporting progress without the checker advancing:
-
-1. **Check verification command** - Ensure it actually runs and produces output
-2. **Verify test suite** - Make sure tests aren't flaky
-3. **Break into subgoals** - Use supervised orchestration instead
-4. **Restart with tighter constraints** - Run `/goal clear` and try again
-
-### Goal Not /goal-Shaped
-
-If the task lacks a verifiable finish line:
-
-1. **Use supervised orchestration** - Follow §7 in the skill documentation
-2. **Split into smaller goals** - Each subgoal should be verifiable
-3. **Add concrete verification** - Define what "done" looks like
-
-### Verification Command Fails
-
-If the verification command doesn't work:
-
-1. **Test the command manually** - Run it outside the goal to see the error
-2. **Check dependencies** - Ensure required tools are installed
-3. **Use helper scripts** - Run `benchmark_goals.py` to test commands
-4. **Adjust the command** - Make it more specific or add error handling
-
-## Helper Scripts
-
-### Validate Skills
-
-Check skill frontmatter and content structure:
-
-```bash
-# Basic validation
-python3 scripts/validate_skills.py
-
-# Content structure validation
-python3 scripts/validate_skills.py --check-content
+```text
+Use $goal-orchestrator to launch this as a new Codex task.
 ```
 
-### Extract Goals
+For Git projects, the new task starts in a Codex worktree by default. A requested branch/ref or the current working tree is used only when you name that starting state. The parent task keeps any existing Goal, and the new task creates and verifies its own Goal.
 
-Extract goal patterns from files:
+Selecting the skill by itself uses **draft mode**. It does not create a goal, edit files, or spawn subagents.
 
-```bash
-# Extract from a file
-python3 scripts/extract_goal.py path/to/file.md
+## The Goal Artifact
 
-# Extract from directory
-python3 scripts/extract_goal.py path/to/directory/
+The canonical Codex goal format is:
 
-# Extract from text
-python3 scripts/extract_goal.py "/goal Implement feature X..."
+```text
+/goal <specific outcome>
 
-# Output to file
-python3 scripts/extract_goal.py path/to/file.md -o goals.json
+Done when:
+- <measurable acceptance criterion>
+
+Constraints:
+- <scope, compatibility, approval, or non-goal boundary>
+
+Verification:
+- <command, observation, or review criterion proving completion>
 ```
 
-### Benchmark Goals
+The goal body must be no more than 4,000 characters. Put background detail in the preceding brief or a referenced file. A textual turn cap is not required. Supply a native token budget only when the user explicitly asks for one.
 
-Test goal conditions for quality:
+## Codex Goal Lifecycle
+
+- `/goal` starts or displays a goal.
+- `/goal edit` revises the objective.
+- `/goal pause` and `/goal resume` control execution.
+- `/goal clear` removes the goal.
+- One unfinished native goal can be active in a task at a time.
+
+An active Goal blocks another Goal in the same task, not a Goal in a separate task. Goal mode keeps the task's existing sandbox and approval policy. It can still pause for user input, approval, or missing authority. Completing a goal requires real verification; passing tests alone is insufficient when they do not prove the requested behavior.
+
+## Delegation Rules
+
+The skill may spawn subagents only during an explicitly requested run. It delegates independent read-heavy work, tests, review, or isolated implementation, then waits and synthesizes the results.
+
+Avoid multiple agents writing to the same checkout. Prefer one implementation owner or separate git worktrees. The main agent remains responsible for validating every result against the actual workspace.
+
+## Contents
+
+- `skills/goal-orchestrator/` — the Codex-first skill and UI metadata.
+- `examples/goal-templates/` — feature, bug-fix, test, documentation, and refactor goal patterns.
+- `examples/brief-templates/` — domain-specific brief prompts.
+- `examples/subgoal-patterns/` — decomposition patterns for independent work.
+- `scripts/generate_brief.py` — generate a structured brief from local project context.
+- `scripts/extract_goal.py` — extract canonical and legacy goal blocks.
+- `scripts/benchmark_goals.py` — check goal structure, verification, and character limits.
+- `scripts/validate_skills.py` — validate skill metadata and required sections.
+- `GUIDE.md` — detailed authoring, lifecycle, delegation, and troubleshooting guidance.
+
+## Install for Codex
+
+Codex discovers personal skills from its configured skills directory. This checkout is currently compatible with `$CODEX_HOME/skills` (normally `~/.codex/skills`):
 
 ```bash
-# Analyze goals without running commands
-python3 scripts/benchmark_goals.py path/to/file.md
-
-# Actually test verification commands (use with caution)
-python3 scripts/benchmark_goals.py path/to/file.md --test-commands
-
-# Specify working directory
-python3 scripts/benchmark_goals.py path/to/file.md --test-commands --cwd /path/to/project
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+cp -R skills/goal-orchestrator "${CODEX_HOME:-$HOME/.codex}/skills/"
 ```
 
-### Generate Brief
-
-Auto-generate brief from project context:
+For a repository-scoped skill shared with the project:
 
 ```bash
-# Generate brief for current directory
-python3 scripts/generate_brief.py .
-
-# Generate with task description
-python3 scripts/generate_brief.py . --task "Implement user authentication"
-
-# Save to file
-python3 scripts/generate_brief.py . -o brief.md
+mkdir -p /path/to/repo/.agents/skills
+cp -R skills/goal-orchestrator /path/to/repo/.agents/skills/
 ```
 
-## Validate The Skills
+Current Codex releases also discover user-level skills under `~/.agents/skills`. Use the Skills UI, `/skills`, or a `$goal-orchestrator` mention to confirm discovery. Codex normally detects skill changes automatically; restart it if an update does not appear.
 
-From this folder:
+## Claude Code Compatibility
+
+The skill retains a small Claude Code compatibility layer for the shared brief, safety, delegation, and verification workflow. Use current Claude Code documentation for its native goal and agent controls; do not project Codex lifecycle details onto Claude Code.
+
+Manual Claude Code installation remains:
+
+```bash
+mkdir -p ~/.claude/skills
+cp -R skills/goal-orchestrator ~/.claude/skills/
+```
+
+## Helper Commands
+
+Generate a brief:
+
+```bash
+python3 scripts/generate_brief.py /path/to/project --task "Implement password reset"
+```
+
+Extract goals:
+
+```bash
+python3 scripts/extract_goal.py examples/goal-templates
+python3 scripts/extract_goal.py /path/to/goal.md
+```
+
+Benchmark goals without running their verification commands:
+
+```bash
+python3 scripts/benchmark_goals.py examples/goal-templates
+```
+
+Running extracted commands is opt-in and executes shell content from the input:
+
+```bash
+python3 scripts/benchmark_goals.py goal.md --test-commands --cwd /path/to/project
+```
+
+## Validate the Kit
+
+From `agent-workflow-kit/`:
 
 ```bash
 pip install -r requirements-dev.txt
 python3 scripts/validate_skills.py
 python3 scripts/validate_skills.py --check-content
+bash scripts/smoke_test.sh
 ```
 
-## Advanced Usage
-
-See `GUIDE.md` for:
-- Deep dive into goal condition writing
-- Subgoal orchestration patterns
-- When to use `/goal` vs supervised orchestration
-- Platform-specific considerations
-- Token budget estimation
-- Multi-session goal patterns
+See [GUIDE.md](GUIDE.md) for detailed goal authoring, approval boundaries, delegation patterns, and troubleshooting.

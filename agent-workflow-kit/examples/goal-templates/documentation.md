@@ -26,18 +26,34 @@ Output as API documentation files with OpenAPI specification.
 
 ```
 /goal Create [DOCUMENTATION TYPE] for [SUBJECT] with all required sections.
-Done only when [LINTING/VALIDATION COMMAND] exits 0 and [REVIEW CHECKLIST] is complete, proven by running validation and showing the checklist in this conversation.
-Constraints: Follow existing documentation style; include code examples; use proper formatting.
-Stop after 20 turns if not met and report what remains.
+
+Done when:
+- Every required topic and example is present and accurate.
+- The documentation matches the current implementation.
+
+Constraints:
+- Follow the existing documentation style and formatting.
+
+Verification:
+- `[LINTING/VALIDATION COMMAND]` exits 0.
+- The review checklist is complete.
 ```
 
 ## Example Goal Condition
 
 ```
 /goal Create API documentation for authentication endpoints with OpenAPI 3.0 specification.
-Done only when spectral lint openapi.yaml exits 0 and all endpoints have examples, proven by running spectral lint and showing the completed checklist in this conversation.
-Constraints: Follow existing API doc style; include curl examples for each endpoint; use proper OpenAPI formatting.
-Stop after 20 turns if not met and report what remains.
+
+Done when:
+- Every authentication endpoint has schemas, errors, and a curl example.
+- The specification matches the implemented routes.
+
+Constraints:
+- Follow the existing API documentation style and OpenAPI 3.0 formatting.
+
+Verification:
+- `spectral lint openapi.yaml` exits 0.
+- The endpoint review checklist is complete.
 ```
 
 ## Verification Methods
@@ -74,7 +90,8 @@ Stop after 20 turns if not met and report what remains.
 - [ ] Style guide exists or is defined
 - [ ] Examples can be tested/verified
 - [ ] Diagrams/screenshots can be created
-- [ ] Turn limit set appropriately (15-25 turns)
+- [ ] Goal body is within 4,000 characters
+- [ ] Publication authority is explicit
 
 ## Subgoal Splitting Pattern
 
@@ -105,4 +122,4 @@ If the goal loops without progress:
 1. Verify the scope is realistic for time budget
 2. Check if examples can be tested/verified
 3. Break into supervised orchestration by section
-4. Run `/goal clear` and restart with smaller scope
+4. Ask the user to edit, pause, or clear the goal before restarting with smaller scope

@@ -3,19 +3,21 @@
 ## Template
 
 ```
-Build or deliver [FEATURE/COMPONENT] in [WEB FRAMEWORK/PROJECT].
-It should include [CORE FUNCTIONALITY], with [UI/UX REQUIREMENTS], [API INTEGRATIONS], and [RESPONSIVENESS/ACCESSIBILITY].
-Make it meet [PERFORMANCE/SECURITY STANDARDS], using [TECH STACK CONSTRAINTS], [STATE MANAGEMENT APPROACH], and [DEPLOYMENT CONSIDERATIONS].
-Output as [CODE CHANGES/STORYBOOK COMPONENTS/DOCUMENTATION].
+Goal: Deliver [FEATURE/COMPONENT].
+Context: [WEB FRAMEWORK/PROJECT], [CURRENT UI], [API], and [DESIGN SYSTEM].
+Output: [CODE/STORIES/DOCUMENTATION] implementing [BEHAVIOR], [RESPONSIVENESS], and [ACCESSIBILITY].
+Boundaries: Preserve [ROUTES/API/DESIGN CONTRACTS]; require approval for dependency or deployment changes.
+Verification: [COMPONENT TESTS], [BROWSER FLOWS], [ACCESSIBILITY CHECK], [BUILD], and visual review.
 ```
 
 ## Example: User Dashboard
 
 ```
-Build or deliver user dashboard in React/Next.js application.
-It should include profile overview, activity timeline, settings panel, and notification center, with responsive design for mobile/tablet/desktop, dark mode support, and WCAG AA accessibility compliance.
-Make it meet production performance standards (Lighthouse score 90+), using existing component library (shadcn/ui), Redux Toolkit for state management, and Vercel deployment configuration.
-Output as React components with Storybook stories and API integration documentation.
+Goal: Deliver a responsive user dashboard in the existing React/Next.js application.
+Context: The current shadcn/ui system, Redux Toolkit state, API client, and dark-mode behavior.
+Output: Profile, activity, settings, and notification components with Storybook stories and API documentation.
+Boundaries: Preserve existing routes and API contracts; do not add dependencies or deploy without approval.
+Verification: Run component and browser tests, verify WCAG AA behavior, build successfully, and review mobile, tablet, desktop, and dark-mode layouts.
 ```
 
 ## Field Explanations

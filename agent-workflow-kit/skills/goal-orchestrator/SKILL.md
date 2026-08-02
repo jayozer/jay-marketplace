@@ -1,156 +1,143 @@
 ---
 name: goal-orchestrator
-description: Turn a broad task into a launch-ready fire-and-forget /goal — an airtight, verifiable completion condition with guardrails — then run it autonomously to done; fall back to supervised multi-agent orchestration when a task can't be made verifiable. Use when the user asks to write a goal, use /goal, run something autonomously or fire-and-forget, fill a build brief, spawn parallel agents or subagents, or handle broad work end to end in Claude Code or Codex.
-argument-hint: "[the broad task to turn into a /goal]"
-user-invocable: true
+description: Turn a broad Codex request into an execution-ready brief and a safe, measurable native Goal, then launch it only when explicitly requested and verify it to completion. Use when the user asks to write, refine, start, or run a goal; use Goal mode or /goal; make broad work autonomous; define done criteria; coordinate an end-to-end task; or use parallel agents as part of an explicitly requested run.
 ---
 
 # Goal Orchestrator
 
-Turn a broad request into a **fire-and-forget `/goal`**: one verifiable completion condition the agent works toward autonomously, across turns, until an independent checker confirms it is met. Your job is to make the condition airtight and the run safe — then step back.
+Treat native Codex Goal mode as the persistence and execution engine. Use this skill as the planner and project manager that makes the goal precise, safe, bounded, and verifiable.
 
-`/goal` is a native Claude Code command (v2.1.139+); Codex has no equivalent — there, use supervised orchestration (§7). After each turn a checker model (Haiku by default) reads the transcript and rules *met* / *not-met*; a *not-met* returns its reason as guidance for the next turn. **The checker only sees what the agent wrote in the conversation — it cannot run commands.** A condition is therefore only as good as the evidence it forces the agent to surface. One goal is active at a time; `/goal clear` stops it.
+## 1. Ground the Request and Choose a Mode
 
-When a task has no verifiable finish line (open-ended, creative, or unsafe to run unsupervised), do not force it into `/goal` — drop to supervised orchestration (§7).
+Inspect the workspace, relevant instructions, existing implementation, and goal state before asking questions. Resolve discoverable facts from the environment. Ask only about product intent, authority, or tradeoffs that materially change the result.
 
-## Platform Adaptation
+Choose one mode:
 
-This skill is written in Claude Code terms; the coding agent already knows which harness it is running in, so take the matching branch.
+- **Draft mode (default):** Produce the brief, goal-shaped decision, and proposed goal. Do not create a native goal, implement the work, or spawn subagents merely because this skill was selected.
+- **Run mode (explicit only):** Enter only when the user clearly asks to start, run, execute, or pursue the goal now. In run mode, create and pursue a native goal when the task passes the gate below.
+- **Supervised fallback:** Use when the work is not goal-shaped. Preserve approval points and complete only the work the user actually authorized.
 
-**Provider API docs — API/SDK goals only.** When the goal builds on the model provider's API or SDK (an agent, an SDK app, tool/function calling, model selection, pricing, caching, or a model/prompt migration), consult the harness-native docs skill *before* writing the condition (§3) so model IDs, API shapes, and limits are grounded rather than guessed. Skip it for goals that don't touch the provider API — test fixes, refactors, UI work.
+If the current runtime is in Plan mode or otherwise forbids execution, remain in draft mode and hand back an execution-ready plan and goal.
 
-- **Claude Code** → invoke the `claude-api` skill via the `Skill` tool (Anthropic/Claude model IDs, params, pricing, tool use, MCP, caching, token counting, migration).
-- **Codex** → the `openai-docs` skill loads natively; follow it — it drives the `openaiDeveloperDocs` MCP tools and its bundled helper for OpenAI model selection, API reference, and migration.
+## 2. Build the Brief
 
-### Tool Name Translation
-
-The tool names elsewhere in this skill (notably §7) are Claude Code's. In Codex, translate:
-
-| This skill says | Codex equivalent |
-| --- | --- |
-| `Task` / Agent tool (dispatch a subagent) | `spawn_agent`, then `wait_agent` (needs `multi_agent = true` in `~/.codex/config.toml`) |
-| Several parallel `Task` calls | several `spawn_agent` calls (spawn all before calling `wait_agent` — they run concurrently) |
-| `TodoWrite` (task tracking) | `update_plan` |
-| `Skill` tool (invoke a skill) | skills load natively — just follow the instructions |
-| `Read` / `Write` / `Edit` / `Bash` | native file and shell tools |
-
-### Platform Notes
-
-**Claude Code** — `/goal` is native (v2.1.139+); the checker model is Haiku by default. Fire-and-forget needs a trusted workspace and auto-approved tools (see §4).
-
-**Codex** — no `/goal` equivalent: always use supervised orchestration (§7). Subagents need `multi_agent = true` in `~/.codex/config.toml`; skills load natively. Codex has no named agent types (`Explore`, `Plan`, `general-purpose` are Claude Code's) — put the role in each agent's prompt instead:
+Capture only information that changes execution:
 
 ```text
-spawn_agent [read-only research prompt, e.g. "Research auth patterns in this codebase and recommend an approach. Do not implement."]
-spawn_agent [implementation prompt, e.g. "Implement the recommended approach. Run npm test and show the results."]
-wait_agent
-wait_agent
+Outcome: [specific result]
+Context: [repo, system, current behavior, relevant sources]
+Output: [artifacts or user-facing result]
+Boundaries: [scope, compatibility, approval limits, non-goals]
+Verification: [tests, observations, measurements, or review criteria]
 ```
 
-## 1. Fill the Brief
+Fill every applicable field. Preserve existing dirty work and applicable `AGENTS.md` or skill instructions. Treat commits, pushes, pull requests, deployments, destructive changes, credential use, purchases, and external messages as separate authority unless the user explicitly included them.
 
-Capture the request before writing any condition. Use this universal form:
+For provider API or SDK work, consult the current provider documentation skill before fixing model names, parameters, limits, or API shapes in the brief.
+
+## 3. Decide Whether the Task Is Goal-Shaped
+
+Require all three:
+
+- **Verifiable:** Observable evidence can prove the result, including behavior that tests alone do not cover.
+- **Safe and authorized:** The work is recoverable and does not hide a required human decision or broaden permissions.
+- **Bounded:** The scope has a realistic finish line rather than an open-ended research or creative loop.
+
+State the decision in one line, for example: `Goal-shaped: yes — verified by the focused regression, full test suite, and final diff review.`
+
+If any requirement fails, do not force the request into Goal mode. In draft mode, explain the missing condition and propose a supervised path. In explicit run mode, perform only safe, authorized supervised work and stop at required approval points.
+
+## 4. Draft the Native Goal
+
+Use this canonical artifact:
 
 ```text
-Build or deliver [OUTCOME] in [CONTEXT, TECH, OR FRAMEWORK].
-It should include [CORE DELIVERABLES], with [BEHAVIOR, INTERACTION, WORKFLOW, OR ACCEPTANCE DETAILS].
-Make it meet [QUALITY BAR], using [RELEVANT CONSTRAINTS], [ENVIRONMENT OR INTEGRATION DETAILS], and [FINISHING TOUCHES].
-Output as [ARTIFACT OR FORMAT].
+/goal <specific outcome>
+
+Done when:
+- <measurable acceptance criterion>
+
+Constraints:
+- <scope, compatibility, approval, or non-goal boundary>
+
+Verification:
+- <command, observation, or review criterion proving completion>
 ```
 
-Do not leave bracketed placeholders. Infer conservative defaults from the request and the current project. Ask the user up front only when a missing detail makes the task impossible, destructive, or materially risky — because once `/goal` is running, clarifying questions stall the loop (see §4).
+Keep the goal body at or below 4,000 characters. Put supporting detail in the preceding brief or a referenced file. Do not add a mandatory textual turn limit. Supply a native token budget only when the user explicitly requests one.
 
-Field meanings:
+Make the goal self-contained enough to serve as both the first execution prompt and the completion criteria. Include actual behavior and artifact checks; do not use a green test suite as the sole proof when it cannot establish the requested outcome.
 
-- `OUTCOME`: the concrete result to produce.
-- `CONTEXT, TECH, OR FRAMEWORK`: repo, language, toolchain, platform, or domain.
-- `CORE DELIVERABLES`: files, features, analysis, fixes, tests, or decisions needed.
-- `BEHAVIOR OR ACCEPTANCE DETAILS`: what must work, how it behaves, edge cases.
-- `QUALITY BAR`: correctness, performance, UX, safety, tone, or evidence standard.
-- `ENVIRONMENT OR INTEGRATION DETAILS`: APIs, data sources, deploy targets, permissions.
-- `ARTIFACT OR FORMAT`: code changes, a file, a report, a PR, a patch, or an answer.
+## 5. Preflight and Launch
 
-## 2. Is This `/goal`-Shaped?
+Show the draft before launch unless the user already approved that exact goal text.
 
-Fire-and-forget only works when "done" is checkable from the transcript. Confirm all three before continuing; if any fails, go to §7.
+### Choose the Launch Destination
 
-- **Verifiable finish line** — done can be proven by a command, exit code, file or count check, or other concrete evidence the agent can print. Not "make it better" or "feels right."
-- **Safe unsupervised** — no destructive, production, financial, or credential actions that need a human in the loop; mistakes are recoverable (git, sandbox, test env).
-- **Bounded** — the work has a realistic end within a turn/token budget, not an open research rabbit hole.
+After execution is explicitly authorized, resolve where it should run:
 
-State your call in one line — e.g. "`/goal`-shaped: yes, verified by `pytest -q` exit 0" — so the choice is explicit.
+- **Current task:** Default when the user says only "start," "run," or "execute." Create the native Goal in the current task.
+- **New Codex task:** Use only when the user explicitly asks for a new, separate, parallel, or background task. Do not create a separate task merely because isolation would be convenient.
 
-## 3. Write the Completion Condition
+For a current-task launch:
 
-This is the heart of the skill. A strong condition has four parts:
+1. Inspect native Goal state with `get_goal` when available.
+2. Preserve any unfinished Goal. Do not silently replace, clear, edit, pause, or resume it; report the conflict and request direction.
+3. Confirm the current workspace, dirty-tree boundaries, verification commands, and required approval points.
+4. Create the native Goal with `create_goal` when available, passing the Goal body without the `/goal` prefix as the objective. Pass `token_budget` only when explicitly requested.
 
-1. **Measurable end state** — the observable result. ("All 3 endpoints return 200 with the documented JSON shape.")
-2. **Verification method that forces evidence into the transcript** — exactly how the agent proves it, run and shown every turn. ("Met only after `npm test` is run and its output showing 0 failures appears in this conversation.")
-3. **Constraints** — what must stay true or unchanged. ("Do not edit `db/migrations/`. Do not add new dependencies.")
-4. **Hard cap** — a turn or time ceiling so a stuck run can't drain tokens. ("Or stop after 40 turns and summarize what's left.")
+For an explicitly requested new-task launch:
 
-Template:
+1. Inspect the parent task's Goal state when available. Preserve and disclose any unfinished parent Goal; it blocks another current-task Goal but does not block a Goal in a separately created task. Do not call `create_goal` in the parent task.
+2. Call `list_projects` before `create_thread` and select the saved project that matches the grounded workspace. Do not guess a project ID.
+3. Check the project's `isGitRepository` value. For a Git project, create the task in a Codex worktree by default; use the saved project directly for a non-Git project or when the user explicitly requests it.
+4. Omit worktree `startingState` by default. Use a specific existing branch/ref or the current working tree only when the user explicitly requests that starting state; do not use this field to name a new branch.
+5. Put the complete brief and canonical Goal text in the new task's initial prompt, followed by this recursion guard:
 
-```text
-/goal [ONE-SENTENCE OBJECTIVE].
-Done only when [MEASURABLE END STATE], proven by [VERIFICATION COMMAND/CHECK] with its output shown in this conversation.
-Constraints: [WHAT MUST STAY UNCHANGED]; do not ask clarifying questions — make a reasonable choice and note it.
-Stop after [N] turns if not met and report what remains.
-```
+   ```text
+   You are already the destination task created by Goal Orchestrator.
+   Launch the native Goal in this task. Do not create another task.
+   ```
 
-Good vs. bad:
+6. Instruct the destination task to inspect its own Goal state with `get_goal`, preserve and report any conflict, call `create_goal` there with the Goal body without the `/goal` prefix, then call `get_goal` again and report whether the Goal is active.
+7. Treat task creation as asynchronous. A returned `clientThreadId` is temporary and must not be passed to tools that require `threadId`; wait until the created task exposes its real `threadId` and `hostId`, using `list_threads` to resolve pending creation when needed.
+8. Use `wait_threads` or `read_thread` with the real identifiers to confirm that the destination reported an active Goal. Task creation alone is not successful launch evidence.
+9. Switch the Codex UI with `navigate_to_codex_page` only when the user asks to open or show the new task.
+10. If task creation is unavailable or cannot yield a real task, do not silently launch in the current task. Return a copy-ready new-task prompt containing the brief, Goal, and recursion guard, or ask whether current-task execution is acceptable.
 
-- ✅ "Done only when `ruff check .` and `pytest -q` both exit 0, output shown; don't touch `legacy/`; stop after 30 turns." (checkable, evidence forced, capped)
-- ✅ "Turn this screenshot into a working app; met once every feature is tested end-to-end in the browser and the steps are shown." (forces demonstrated evidence)
-- ❌ "Make the codebase cleaner / production-ready." (no finish line — loops, burns tokens)
-- ❌ "Complete the feature." (checker can be fooled by an unproven 'done')
+For either destination, keep the existing sandbox and approval policy. Goal mode and task creation do not grant broader filesystem, network, connector, credential, or publication access.
 
-**Ground it first (API/SDK goals).** If the goal builds on the provider's API or SDK, pull the harness-native docs skill before drafting (see Platform Adaptation) — don't pin model IDs, params, or limits the agent only half-remembers into the condition.
+During execution, make conservative in-scope assumptions and record material ones. Request input when progress needs new authority, an irreversible action, or a product choice that would materially change the result.
 
-**Keep it tight.** Claude Code hard-caps the `/goal` condition at 4000 characters (≈1000 tokens), and the checker re-reads it every turn — so a bloated condition costs tokens each turn and blurs the met/not-met target. If you brush the cap, detail has leaked in: move it to the brief (§1) and working context, which have no such limit, and keep the `/goal` line to the four parts above.
+## 6. Execute and Coordinate Work
 
-Show the drafted condition to the user before firing.
+Keep the main agent responsible for the outcome. Use subagents only in explicit run mode, when independent work materially improves speed, quality, or coverage and the runtime permits delegation.
 
-## 4. Pre-Flight (Guardrails)
+- Delegate read-heavy exploration, tests, review, or clearly isolated implementation.
+- Give each subagent one self-contained objective, context, boundaries, verification request, and return format.
+- Spawn independent agents before waiting so they can run concurrently.
+- Avoid concurrent writers in one checkout. Use one implementation owner or isolated worktrees.
+- Wait for every required result, verify claims against the workspace, reconcile conflicts, and synthesize one answer.
 
-Before launching, set up for unattended execution:
+Do direct work when the task is small, tightly coupled, or cheaper than orchestration.
 
-- **Trusted workspace** — `/goal` requires a trusted directory; it is blocked in untrusted repos and when hooks are disabled (`disableAllHooks` / `allowManagedHooksOnly`).
-- **Auto-approve tools** — enable auto-accept so permission prompts don't halt the loop, but only once destructive actions are fenced off (below).
-- **No clarifying questions** — the condition must tell the agent to decide and note assumptions rather than stop and ask; any pause ends the walk-away.
-- **Fence danger** — exclude prod/deploy/secret/irreversible actions in the constraints; prefer a branch, git worktree, or sandbox so mistakes are recoverable.
-- **Confirm the cap** — re-check that the turn/time limit from §3 is present.
+## 7. Verify, Complete, or Block
 
-## 5. Launch and Walk Away
+Before completion:
 
-- Fire the condition with `/goal`.
-- **Watch the first ~hour** (or first several turns) for stuck or *acknowledgement* loops — the agent reporting progress while the checker never advances. Kill early if you see one.
-- `/goal clear` (aliases: `stop`, `off`, `reset`, `none`, `cancel`) halts immediately. `--resume` restores the goal in a later session (the turn counter and token baseline reset).
+1. Re-run the real verification and read the actual output.
+2. Check the requested behavior and artifacts, not only exit codes.
+3. Review the final diff and confirm boundaries, existing work, and approval limits were preserved.
+4. Report commands, decisive results, skipped checks, assumptions, and remaining risks.
 
-## 6. On Completion — Verify and Report
+Use `update_goal` when available:
 
-When the goal clears, do not take the checker's word as final — it only saw the transcript.
+- Mark `complete` only when the full objective is achieved and no required work remains.
+- Mark `blocked` only after the same blocking condition has persisted for at least three consecutive goal turns and no meaningful in-scope progress remains. A resumed blocked goal starts a fresh blocked audit.
+- Do not mark a goal complete or blocked merely because it is hard, slow, uncertain, incomplete, or near its budget.
 
-1. **Re-run the real verification yourself** (the §3 command) and read the actual output.
-2. Reconcile against the brief and the repo; if the checker passed but the evidence doesn't hold, reopen the work.
-3. Report concisely: what was produced, the verification you re-ran and its result, turns or cost if notable, and any remaining risks or assumptions the autonomous run made.
+Leave editing, pausing, resuming, and clearing to the user-facing Goal controls (`/goal edit`, `/goal pause`, `/goal resume`, `/goal clear`) unless the user explicitly requests the corresponding action. When a budgeted goal completes, report the final token usage returned by the goal tool.
 
-## 7. Fallback: Supervised Orchestration
+## Claude Code Compatibility
 
-When §2 said the task is **not** `/goal`-shaped, run it yourself with subagents instead of an autonomous loop. The main agent owns the outcome; subagents research, plan, review, or implement in isolation — they do not replace your judgment.
-
-**Parallelize only when it helps** (speed, quality, coverage); do small or tightly coupled work directly. In Claude Code the subagent mechanism is the `Task`/Agent tool (in Codex, `spawn_agent`/`wait_agent` — see Platform Adaptation) — emit all calls in one message to run them concurrently, match the agent type to the subgoal (`Explore` for read-only research, `Plan` for design, `general-purpose` for build/verify), and isolate parallel writers with git worktrees to avoid edit conflicts. See `superpowers:dispatching-parallel-agents`.
-
-Give each agent a self-contained prompt with its own dedicated subgoal:
-
-```text
-[ONE CLEAR SUBGOAL]
-
-Context: [Filled brief + relevant repo, files, constraints, current plan.]
-Deliverable: [Specific output: findings, patch, design, tests, risks, recommendation.]
-Boundaries: [What this agent owns; what it must not touch or decide.]
-Verification: [Checks to run or evidence to collect.]
-Return: summary · evidence/file refs · artifact/recommendation · verification done · unknowns/risks.
-```
-
-Then synthesize: compare each result against the real repo and brief, verify claims before relying on them, reconcile conflicts (workspace evidence beats agent opinion), apply only what fits, and run the smallest reliable check that proves the outcome. Report the synthesis, not the machinery.
+Reuse the brief, goal-shaped gate, explicit-launch rule, permission boundaries, selective delegation, and independent final verification in Claude Code. Translate only the runtime-specific goal and agent controls using current Claude Code documentation; do not assume Codex tool names, lifecycle rules, or implementation details apply there.
