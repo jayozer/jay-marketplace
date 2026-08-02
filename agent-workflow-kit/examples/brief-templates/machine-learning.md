@@ -3,19 +3,21 @@
 ## Template
 
 ```
-Build or deliver [ML MODEL/PIPELINE] in [ML FRAMEWORK/PROJECT].
-It should include [MODEL ARCHITECTURE], with [TRAINING DATA], [FEATURE ENGINEERING], and [EVALUATION METRICS].
-Make it meet [MODEL PERFORMANCE TARGETS], using [TRAINING FRAMEWORK], [DEPLOYMENT STRATEGY], and [MONITORING/DRIFT DETECTION].
-Output as [MODEL ARTIFACTS/TRAINING CODE/INFERENCE API].
+Goal: Deliver [ML MODEL/PIPELINE].
+Context: [ML FRAMEWORK/PROJECT], [DATA SOURCE], [FEATURES], and [CURRENT BASELINE].
+Output: [MODEL ARTIFACTS/TRAINING CODE/INFERENCE API/MODEL CARD].
+Boundaries: Preserve [DATA/PRIVACY/COST CONSTRAINTS]; require approval for training spend or deployment.
+Verification: [REPRODUCIBLE EVAL], [TARGET METRICS], [ROBUSTNESS/FAIRNESS CHECKS], and artifact review.
 ```
 
 ## Example: Customer Churn Prediction Model
 
 ```
-Build or deliver customer churn prediction model in scikit-learn project.
-It should include gradient boosting classifier architecture, with training data from customer database (features: usage patterns, support tickets, engagement metrics), feature engineering for temporal patterns, and evaluation metrics (AUC-ROC 0.85+, precision 0.80+, recall 0.75+).
-Make it meet production model standards with explainability requirements, using scikit-learn with XGBoost, FastAPI for inference, and Evidently AI for monitoring/drift detection.
-Output as trained model artifacts, training pipeline code, FastAPI inference endpoint, and model card documentation.
+Goal: Deliver a reproducible customer-churn model in the existing scikit-learn project.
+Context: Approved customer features, XGBoost, FastAPI inference, and Evidently AI monitoring.
+Output: Training pipeline, model artifact, inference endpoint, evaluation report, and model card.
+Boundaries: Use only approved de-identified data; do not start paid training or deploy without approval.
+Verification: Reproduce AUC-ROC 0.85+, precision 0.80+, and recall 0.75+ on the held-out set, then review explainability and drift checks.
 ```
 
 ## Field Explanations

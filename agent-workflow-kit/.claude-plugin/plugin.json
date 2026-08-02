@@ -1,7 +1,7 @@
 {
   "name": "agent-workflow-kit",
-  "description": "Turn a broad task into a filled brief, a concrete top-level goal, optional parallel subagent goals, synthesized results, and verification.",
-  "version": "1.0.0",
+  "description": "Turn broad work into a safe, measurable native Codex goal with explicit launch, selective delegation, and verified completion.",
+  "version": "2.0.0",
   "author": {
     "name": "Jay Ozer",
     "email": "jayozer@gmail.com"
@@ -9,5 +9,5 @@
   "homepage": "https://github.com/jayozer/jay-marketplace/tree/main/agent-workflow-kit",
   "repository": "https://github.com/jayozer/jay-marketplace",
   "license": "MIT",
-  "keywords": ["goals", "subagents", "orchestration", "planning", "verification"]
+  "keywords": ["codex", "goals", "subagents", "orchestration", "planning", "verification"]
 }

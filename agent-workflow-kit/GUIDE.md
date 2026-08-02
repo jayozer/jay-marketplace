@@ -1,431 +1,251 @@
 # Goal Orchestrator Guide
 
-A deep dive into writing effective goal conditions, subgoal orchestration, and advanced patterns.
+This guide explains how to turn broad work into safe, measurable native Codex goals. The short operational rules live in `skills/goal-orchestrator/SKILL.md`; this document provides examples and rationale.
 
-## Table of Contents
+## Contents
 
-1. [Goal Condition Writing](#goal-condition-writing)
-2. [Subgoal Orchestration Patterns](#subgoal-orchestration-patterns)
-3. [When to Use /goal vs Supervised Orchestration](#when-to-use-goal-vs-supervised-orchestration)
-4. [Platform-Specific Considerations](#platform-specific-considerations)
-5. [Token Budget Estimation](#token-budget-estimation)
-6. [Multi-Session Goal Patterns](#multi-session-goal-patterns)
+1. [The Two-Layer Model](#the-two-layer-model)
+2. [Build an Execution-Ready Brief](#build-an-execution-ready-brief)
+3. [Decide Whether Work Is Goal-Shaped](#decide-whether-work-is-goal-shaped)
+4. [Write the Goal](#write-the-goal)
+5. [Launch and Lifecycle](#launch-and-lifecycle)
+6. [Delegate Independent Work](#delegate-independent-work)
+7. [Verify Completion](#verify-completion)
+8. [Troubleshooting](#troubleshooting)
+9. [Claude Code Compatibility](#claude-code-compatibility)
 
-## Goal Condition Writing
+## The Two-Layer Model
 
-### The Four-Part Structure
+Native Codex Goal mode and `goal-orchestrator` solve different problems:
 
-A strong goal condition has exactly four parts:
+- **Native `/goal`** keeps a persistent target attached to the task and continues working toward it.
+- **`$goal-orchestrator`** discovers the real outcome, constraints, approval points, and proof needed before execution.
 
-1. **Measurable end state** - The observable result
-2. **Verification method** - How the agent proves it
-3. **Constraints** - What must stay true
-4. **Hard cap** - Turn or time limit
+Use `/goal` directly when the objective is already precise. Use `$goal-orchestrator` when words such as "production-ready," "reliable," "redesign," or "handle this end to end" still need to be grounded in the current workspace.
 
-### Writing Effective Objectives
+The skill defaults to drafting. Only explicit language such as "start it," "run it," "execute this goal," or "handle it end to end now" authorizes native goal creation and execution.
 
-**Good objectives:**
-- "Implement user authentication with login, signup, and password reset"
-- "Fix memory leak in image processing module"
-- "Add test suite for payment service with 80% coverage"
+## Build an Execution-Ready Brief
 
-**Bad objectives:**
-- "Make the codebase better"
-- "Improve performance"
-- "Clean up the code"
+Inspect before asking. Read applicable `AGENTS.md`, relevant code and docs, current git state, and existing goal state. Questions should resolve product intent, authority, or a material tradeoff—not facts the workspace can answer.
 
-**Why:** Good objectives are specific and bounded. Bad objectives are open-ended and subjective.
-
-### Choosing Verification Methods
-
-The verification method forces evidence into the transcript. Choose methods that:
-
-- **Exit with clear status codes** - `pytest -q`, `npm test`, `go test ./...`
-- **Produce observable output** - File counts, grep results, build logs
-- **Are fast to run** - Avoid commands that take minutes
-- **Are deterministic** - Same result every time
-
-**Verification patterns:**
+Use five fields:
 
 ```text
-# Test suite
-Done only when pytest -q exits 0 with all tests passing, proven by running pytest -q and showing its output in this conversation.
-
-# File existence
-Done only when the file src/auth/service.py exists and contains the authenticate function, proven by running grep -n "def authenticate" src/auth/service.py and showing its output in this conversation.
-
-# Build success
-Done only when npm run build exits 0 with no errors, proven by running the command and showing its output in this conversation.
-
-# Count check
-Done only when grep -r "TODO" src/ returns 0 results, proven by running the command and showing its output in this conversation.
+Outcome: The observable result.
+Context: The repo, system, current behavior, and relevant sources.
+Output: The code, report, artifact, or user-facing result.
+Boundaries: Scope, compatibility, approval limits, and non-goals.
+Verification: Tests, observations, measurements, and review criteria.
 ```
 
-### Writing Effective Constraints
+### Strong boundaries
 
-Constraints fence dangerous actions and keep the goal focused:
+- Preserve pre-existing dirty changes.
+- Do not modify migration files.
+- Keep the public API backward compatible.
+- Do not add dependencies.
+- Do not commit, push, open a pull request, deploy, or send messages.
 
-**Good constraints:**
-- "Do not modify database schema files in migrations/"
-- "Do not add new npm packages without justification"
-- "Make minimal changes to existing code"
-- "Do not touch production configuration files"
+Avoid vague boundaries such as "be careful" or "do not break anything."
 
-**Bad constraints:**
-- "Don't break anything" (too vague)
-- "Be careful" (not actionable)
-- "Write good code" (subjective)
+## Decide Whether Work Is Goal-Shaped
 
-**Why:** Good constraints are specific and actionable. Bad constraints are subjective or impossible to verify.
+Require three properties.
 
-### Setting Turn Limits
+### Verifiable
 
-Turn limits prevent token drain on stuck goals:
+The finish line must produce observable evidence. Prefer a combination of:
 
-- **Simple fixes:** 15-20 turns
-- **Feature builds:** 25-35 turns
-- **Complex refactoring:** 30-40 turns
-- **Research-heavy tasks:** 20-30 turns
+- focused regression tests;
+- the relevant broader suite;
+- builds, type checks, or linters;
+- exact file, count, schema, or output checks;
+- browser or device behavior when user-visible interaction matters; and
+- final diff review against the request.
 
-**Formula:** Estimate turns = (complexity × 10) + 10
+Do not claim that a green suite proves behavior the suite never exercises.
 
-### Common Mistakes
+### Safe and authorized
 
-**Mistake 1: Vague verification**
-```text
-❌ Done only when the feature works.
-✅ Done only when npm test exits 0 with all feature tests passing.
-```
+Goal mode does not broaden the sandbox, network, connector, credential, or publication authority. Exclude—or preserve approval points for—production deployment, destructive data changes, purchases, secret use, external messages, commits, pushes, merges, and pull requests unless the user explicitly included them.
 
-**Mistake 2: Missing turn cap**
-```text
-❌ Done only when all tests pass.
-✅ Done only when all tests pass. Stop after 30 turns if not met.
-```
+### Bounded
 
-**Mistake 3: Over-constraining**
-```text
-❌ Constraints: Do not modify any files; do not add any code; use only existing functions.
-✅ Constraints: Do not modify database schema; follow existing patterns.
-```
+The result needs a realistic end state. Open-ended research, subjective creative exploration, and "make it better" are not native-goal objectives until the orchestrator turns them into measurable work.
 
-**Mistake 4: No evidence forcing**
-```text
-❌ Done only when tests pass.
-✅ Done only when tests pass, proven by running npm test and showing its output in this conversation.
-```
-
-## Subgoal Orchestration Patterns
-
-### When to Split into Subgoals
-
-Split into subgoals when:
-
-- **Work is naturally independent** - Different features, layers, or components
-- **Parallelization helps** - Speed, quality, or coverage benefits
-- **Complexity is high** - Single goal would be too large or unclear
-- **Specialization matters** - Different subgoals need different agent types
-
-**Don't split when:**
-- Work is tightly coupled
-- Subgoals are too small (overhead > benefit)
-- Dependencies are complex
-- Single goal is clearer
-
-### Subgoal Prompt Structure
-
-Each subagent needs a self-contained prompt:
+State the decision explicitly:
 
 ```text
-[ONE CLEAR SUBGOAL]
-
-Context: [Filled brief + relevant repo, files, constraints, current plan.]
-Deliverable: [Specific output: findings, patch, design, tests, risks, recommendation.]
-Boundaries: [What this agent owns; what it must not touch or decide.]
-Verification: [Checks to run or evidence to collect.]
-Return: summary · evidence/file refs · artifact/recommendation · verification done · unknowns/risks.
+Goal-shaped: yes — verified by the focused regression, full suite, browser check, and final diff review.
 ```
 
-### Parallel Execution
+If any property is missing, stay supervised. The orchestrator can still produce a plan or perform explicitly authorized work without pretending the task is autonomous.
 
-In Claude Code, emit all Task calls in one message:
+## Write the Goal
+
+Use this format:
 
 ```text
-[Task: Explore agent for research]
-[Task: Plan agent for design]
-[Task: general-purpose agent for implementation]
+/goal <specific outcome>
+
+Done when:
+- <measurable acceptance criterion>
+- <measurable acceptance criterion>
+
+Constraints:
+- <scope, compatibility, approval, or non-goal boundary>
+
+Verification:
+- `<focused command>` exits 0.
+- `<broader command>` exits 0.
+- The final diff contains no unrelated changes.
 ```
 
-This runs them concurrently. In Codex, use multiple `spawn_agent` calls.
+The goal body becomes the execution prompt and completion criteria. Keep it at or below 4,000 characters. Move background detail into the brief or a referenced file.
 
-### Synthesis Pattern
-
-After subgoals complete, synthesize results:
-
-1. **Compare against repo** - Workspace evidence beats agent opinion
-2. **Verify claims** - Don't trust agent assertions without evidence
-3. **Reconcile conflicts** - Prioritize concrete evidence over opinions
-4. **Apply selectively** - Only use what fits the brief
-5. **Run verification** - Smallest reliable check that proves outcome
-
-### Common Subgoal Patterns
-
-See `examples/subgoal-patterns/` for detailed patterns:
-
-- **Layered Architecture** - Split by architectural layers (data, logic, API, UI)
-- **Feature-by-Feature** - Split by independent features
-- **Test-Driven** - Tests first, then implementation
-- **Research-Then-Build** - Research phase, then build phase
-
-## When to Use /goal vs Supervised Orchestration
-
-### Use /goal When
-
-✅ **Verifiable finish line exists**
-- Test suite can prove completion
-- File counts or existence checks work
-- Exit codes clearly indicate success/failure
-
-✅ **Safe to run unsupervised**
-- No destructive actions
-- No production deployments
-- No credential operations
-- Mistakes are recoverable (git, sandbox)
-
-✅ **Bounded scope**
-- Realistic end within turn budget
-- Not an open research rabbit hole
-- Clear acceptance criteria
-
-### Use Supervised Orchestration When
-
-❌ **No verifiable finish line**
-- "Make it better"
-- "Improve UX"
-- "Clean up code"
-
-❌ **Unsafe unsupervised**
-- Production deployments
-- Database migrations
-- Credential operations
-- Irreversible changes
-
-❌ **Open-ended**
-- Research tasks
-- Creative work
-- Exploration without clear destination
-
-### Decision Flowchart
-
-```
-Task Request
-    │
-    ├─→ Is there a verifiable finish line?
-    │       ├─ No → Supervised Orchestration
-    │       └─ Yes → Continue
-    │
-    ├─→ Is it safe to run unsupervised?
-    │       ├─ No → Supervised Orchestration
-    │       └─ Yes → Continue
-    │
-    ├─→ Is the scope bounded?
-    │       ├─ No → Supervised Orchestration
-    │       └─ Yes → Use /goal
-    │
-    └─→ Otherwise → Supervised Orchestration
-```
-
-## Platform-Specific Considerations
-
-### Claude Code
-
-**Tool mapping:**
-- `Task` / Agent tool → Dispatch subagents
-- `TodoWrite` → Task tracking
-- `Skill` tool → Invoke skills
-- Native tools for file/shell operations
-
-**Goal command:** `/goal` is native (v2.1.139+)
-
-**Checker model:** Haiku by default
-
-### Codex
-
-**Tool mapping:**
-- `spawn_agent` / `wait_agent` → Dispatch subagents (needs `multi_agent = true`)
-- `update_plan` → Task tracking
-- Skills load natively
-- Native tools for file/shell operations
-
-**Goal command:** Not native, use supervised orchestration
-
-**Configuration:** Enable multi-agent in `~/.codex/config.toml`
-
-### Platform Adaptation Checklist
-
-- [ ] Translate tool names for target platform
-- [ ] Adjust goal command usage (Claude Code only)
-- [ ] Configure multi-agent if using subgoals (Codex)
-- [ ] Test verification commands on target platform
-- [ ] Adjust file paths for platform conventions
-
-## Token Budget Estimation
-
-### Goal Condition Cost
-
-The checker re-reads the goal condition every turn. Keep it under 4000 characters (~1000 tokens).
-
-**Cost formula:** `turns × (goal_tokens + transcript_tokens)`
-
-**Example:** 30 turns × (1000 + 2000) = 90,000 tokens
-
-### Optimization Strategies
-
-1. **Keep goal tight** - Move details to brief, not goal
-2. **Use turn caps** - Prevent runaway token usage
-3. **Prefer short verification** - Fast commands = fewer turns
-4. **Avoid verbose constraints** - Be specific, not wordy
-
-### Budget Planning
-
-**Conservative budget:** 100,000 tokens per goal
-**Aggressive budget:** 200,000 tokens per goal
-**Large tasks:** Split into subgoals to reduce per-goal cost
-
-## Multi-Session Goal Patterns
-
-### Resuming Goals
-
-Claude Code supports goal resumption:
+### Good objective
 
 ```text
-/goal --resume
+/goal Reject expired password-reset tokens while preserving valid-token behavior and the existing database schema.
 ```
 
-This restores the goal in a new session (the turn counter and token baseline reset). To cancel a goal instead, use `/goal clear`.
-
-### Session Handoff Pattern
-
-When a goal spans sessions:
-
-1. **Session 1:** Launch goal, make progress
-2. **Session 2:** Resume with `--resume`, continue
-3. **Session 3:** Resume again if needed
-
-**Important:** The turn counter and token baseline reset on resume.
-
-### Long-Running Goals
-
-For very long tasks, consider:
-
-1. **Split into sequential goals** - Each phase is a separate goal
-2. **Use supervised orchestration** - More control across sessions
-3. **Document progress** - Save state to files for handoff
-
-### State Persistence
-
-Save goal state to files for cross-session continuity:
+### Weak objective
 
 ```text
-# Save progress
-echo "Phase 1 complete: Database layer done" > goal-progress.txt
-
-# Load in new session
-cat goal-progress.txt
+/goal Improve authentication.
 ```
 
-## Advanced Patterns
+### Verification without a shell command
 
-### Conditional Goals
-
-Use goals that adapt based on conditions:
+Commands are not the only valid proof. Documentation, design, research, and UX work can use measurable review criteria:
 
 ```text
-/goal Implement feature X.
-Done only when either npm test exits 0 OR manual verification checklist is complete, proven by running the check and showing the result.
+Verification:
+- Every recommendation cites one of the supplied sources.
+- The final comparison covers cost, migration risk, and operational tradeoffs.
+- Conflicting or missing evidence is identified explicitly.
 ```
 
-### Fallback Verification
+### Budgets
 
-Provide multiple verification methods:
+Do not insert a conventional turn limit into every goal. When the runtime exposes a native token budget, pass it only when the user explicitly requests one. A budget limits a run; it does not define successful completion.
+
+## Launch and Lifecycle
+
+Before an explicit launch:
+
+1. Show the proposed goal unless the exact text is already approved.
+2. Choose the launch destination.
+3. Inspect the relevant goal state and preserve unfinished work.
+4. Confirm the workspace, dirty tree, verification commands, and approval points.
+5. Start the goal without changing sandbox or approval settings.
+
+### Launch in the current task
+
+This is the default when the user says only "start," "run," or "execute." Inspect the current task with `get_goal`. If an unfinished Goal already exists, preserve it and ask for direction; otherwise call `create_goal` here.
+
+### Launch in a new Codex task
+
+Use this route only when the user explicitly asks for a new, separate, parallel, or background task. An unfinished Goal in the parent task is preserved and disclosed, but it does not prevent a different Goal in the new task.
+
+1. Do not call `create_goal` in the parent task.
+2. Discover the matching saved project with `list_projects` before calling `create_thread`.
+3. If the saved project is a Git repository, create a Codex worktree by default. Use the saved project directly only for a non-Git project or when the user explicitly requests it.
+4. Omit worktree `startingState` unless the user explicitly asks to start from a particular existing branch/ref or include the current working tree.
+5. Send the complete brief and Goal text in the new task's prompt, plus this guard:
+
+   ```text
+   You are already the destination task created by Goal Orchestrator.
+   Launch the native Goal in this task. Do not create another task.
+   ```
+
+6. Tell the destination to inspect its own Goal state, call `create_goal`, inspect again, and report that the Goal is active.
+7. Treat `create_thread` as asynchronous. A temporary `clientThreadId` is not a usable `threadId`; wait for the real task identifiers, then use `wait_threads` or `read_thread` to confirm Goal activation.
+8. Open the new task in the Codex UI only when the user asks to see it.
+
+If task creation is unavailable, provide the complete prompt for the user to paste into a new task or ask whether launching in the current task is acceptable. Never change destinations silently.
+
+Codex provides these user controls:
+
+- `/goal` — start or view the task goal;
+- `/goal edit` — revise its objective;
+- `/goal pause` — pause work;
+- `/goal resume` — resume work; and
+- `/goal clear` — remove it.
+
+The agent should not silently invoke those lifecycle controls. New authority, irreversible actions, or material product decisions still require the user.
+
+## Delegate Independent Work
+
+Delegation is available only during an explicitly requested run. Use it when independent work materially improves speed, quality, or coverage.
+
+Good subagent work includes:
+
+- read-only codebase exploration;
+- isolated test or log analysis;
+- independent review dimensions;
+- research over separate source sets; and
+- implementation in non-overlapping files or isolated worktrees.
+
+Avoid delegation for a tiny edit, a tightly coupled decision, or multiple writers in the same checkout.
+
+Give each subagent:
 
 ```text
-/goal Fix the bug.
-Done only when either pytest -q exits 0 OR the manual test case passes, proven by running the appropriate check and showing the result.
+Objective: [one independent result]
+Context: [brief, relevant files, and current state]
+Boundaries: [owned area and forbidden actions]
+Verification: [checks or evidence to collect]
+Return: [summary, evidence/file refs, result, verification, risks]
 ```
 
-### Progressive Goals
+Spawn independent agents before waiting. The main agent must wait for required results, compare them with the real workspace, reconcile disagreements, and run final verification itself.
 
-Chain goals for complex work:
+## Verify Completion
 
-```text
-# Goal 1: Database layer
-/goal Implement database schema and migrations.
+Completion is an evidence decision, not a progress report.
 
-# Goal 2: Service layer (after Goal 1)
-/goal Implement service layer using the database from Goal 1.
+Before marking a goal complete:
 
-# Goal 3: API layer (after Goal 2)
-/goal Implement API endpoints using the service from Goal 2.
-```
+1. Re-run the real checks and inspect their output.
+2. Confirm the requested behavior and artifacts.
+3. Review the final diff for scope and regressions.
+4. Distinguish passed, failed, blocked, and skipped checks.
+5. Report assumptions and remaining risks.
 
-## Troubleshooting Deep Dive
+Mark a native goal complete only when the entire objective is achieved and no required work remains.
 
-### Goal Loops Without Progress
+Mark it blocked only after the same blocking condition has persisted for at least three consecutive goal turns and no meaningful in-scope progress remains. If a blocked goal is resumed, begin a fresh blocked audit. Difficulty, uncertainty, incomplete work, or a nearly exhausted budget are not blocking verdicts by themselves.
 
-**Symptoms:** Agent reports progress but checker never advances
+For a budgeted goal, report the final token usage returned by the goal tool after successful completion.
 
-**Causes:**
-- Verification command not actually running
-- Test suite is flaky
-- Evidence not being forced into transcript
-- Goal condition too vague
+## Troubleshooting
 
-**Solutions:**
-1. Manually run verification command
-2. Add explicit evidence forcing ("proven by running X and showing output")
-3. Tighten goal condition
-4. Break into supervised orchestration
+### The goal is vague
 
-### Goal Fails Prematurely
+Return to the brief. Replace activities such as "improve" or "review" with an observable result, boundaries, and proof.
 
-**Symptoms:** Goal marked "not-met" when work is actually done
+### Verification passes but the feature is wrong
 
-**Causes:**
-- Checker misinterprets transcript
-- Verification command output unclear
-- Goal condition ambiguous
-- Evidence buried in long transcript
+The check is too weak. Add direct behavior, artifact, or UI evidence and a final diff review. Do not weaken the objective to match an incomplete test suite.
 
-**Solutions:**
-1. Make verification output explicit and clear
-2. Simplify goal condition
-3. Force evidence to appear at end of turn
-4. Use more specific verification
+### The run needs a new decision
 
-### Goal Runs Too Long
+Pause execution and ask. "Do not ask questions" is not a safe substitute for missing authority or a material product choice.
 
-**Symptoms:** Goal hits turn cap without completion
+### An unfinished goal already exists
 
-**Causes:**
-- Turn cap too low for task complexity
-- Verification too slow
-- Goal too broad
-- Agent getting stuck in loops
+For a current-task launch, preserve it and ask whether the user wants to continue, edit, pause, or clear it. Do not create a competing Goal in that task. For an explicitly requested new-task launch, preserve and disclose the parent Goal, then continue with the separate task because each task has its own Goal state.
 
-**Solutions:**
-1. Increase turn cap appropriately
-2. Use faster verification methods
-3. Split into smaller goals
-4. Add constraints to prevent loops
+### Subagents conflict
 
-## Best Practices Summary
+Stop concurrent writing, select one implementation owner, reconcile the workspace manually, and rerun the relevant checks. Use worktrees for future independent writers.
 
-1. **Be specific** - Vague goals fail
-2. **Force evidence** - Checker only sees transcript
-3. **Set caps** - Prevent token drain
-4. **Test verification** - Ensure commands work
-5. **Know when to split** - Subgoals for complex work
-6. **Choose right approach** - /goal vs supervised
-7. **Optimize for tokens** - Keep goals tight
-8. **Plan for sessions** - Resume patterns for long work
+### The task is open-ended or unsafe
+
+Use supervised planning or execution with explicit approval points. A persistent goal is not a reason to remove the human from high-impact decisions.
+
+## Claude Code Compatibility
+
+The brief, goal-shaped gate, explicit launch rule, safety boundaries, selective delegation, and final verification are portable. Claude Code goal commands, checker behavior, permissions, and agent tools can change independently, so translate those controls from current Claude Code documentation instead of copying Codex-specific lifecycle rules.

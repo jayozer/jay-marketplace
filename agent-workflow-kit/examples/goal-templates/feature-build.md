@@ -26,18 +26,36 @@ Output as code changes with migration files and API documentation.
 
 ```
 /goal Implement [FEATURE NAME] with all acceptance criteria met.
-Done only when [VERIFICATION COMMAND] exits 0 with all tests passing, proven by running the command and showing its output in this conversation.
-Constraints: Do not modify [PROTECTED FILES/DIRS]; do not add new dependencies without justification; follow existing code style.
-Stop after 30 turns if not met and report what remains.
+
+Done when:
+- Every stated behavior and acceptance criterion works.
+- Focused regression coverage protects the new behavior.
+
+Constraints:
+- Do not modify [PROTECTED FILES/DIRS] or add dependencies without explicit justification.
+- Follow existing architecture and code style.
+
+Verification:
+- `[VERIFICATION COMMAND]` exits 0.
+- The requested behavior and final diff are reviewed directly.
 ```
 
 ## Example Goal Condition
 
 ```
 /goal Implement user authentication system with login, signup, password reset, and session management.
-Done only when npm test exits 0 with all authentication tests passing, proven by running npm test and showing its output in this conversation.
-Constraints: Do not edit existing migration files (add new migrations as needed); do not add new npm packages without justification; follow existing Express.js middleware patterns.
-Stop after 30 turns if not met and report what remains.
+
+Done when:
+- Login, signup, password reset, and session management satisfy the documented API behavior.
+- Focused tests cover success, validation, authorization, and expiry cases.
+
+Constraints:
+- Do not edit existing migration files or add packages without explicit justification.
+- Follow existing Express.js middleware patterns.
+
+Verification:
+- `npm test` exits 0 with all authentication tests passing.
+- The API behavior and final diff are reviewed directly.
 ```
 
 ## Verification Methods
@@ -62,12 +80,12 @@ Choose based on your tech stack:
 
 ## Pre-Flight Checklist
 
-- [ ] Trusted workspace enabled
-- [ ] Auto-approve tools enabled
+- [ ] Workspace, sandbox, and approval boundaries are understood
 - [ ] Test suite exists and passes baseline
 - [ ] Database migrations are reversible
 - [ ] Feature has clear acceptance criteria
-- [ ] Turn limit set appropriately (20-40 turns)
+- [ ] Goal body is within 4,000 characters
+- [ ] Commit, push, deployment, and publication authority are explicit
 
 ## Subgoal Splitting Pattern
 
@@ -82,9 +100,9 @@ For complex features, consider splitting into:
 
 ## Recovery from Stuck Goals
 
-If the goal loops on "acknowledgement" without progress:
+If the goal repeats progress without resolving the objective:
 
 1. Check if verification command is actually running
 2. Verify test suite is not flaky
 3. Break into smaller subgoals using supervised orchestration
-4. Run `/goal clear` and restart with tighter constraints
+4. Ask the user to edit, pause, or clear the goal before restarting with tighter constraints

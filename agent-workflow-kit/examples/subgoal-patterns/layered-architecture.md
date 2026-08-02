@@ -2,11 +2,11 @@
 
 ## When to Use
 
-Use this pattern when building systems with clear architectural layers (UI, API, business logic, data).
+Use this pattern during an explicitly requested run when a system has clear architectural layers (UI, API, business logic, data).
 
 ## Pattern
 
-Split work by architectural layers, from bottom to top or top to bottom depending on dependencies.
+Split work by architectural layers, from bottom to top or top to bottom depending on dependencies. Run dependent layers sequentially. Parallelize only frozen, independent interfaces in isolated worktrees.
 
 ## Example: Building a User Management Feature
 
@@ -63,7 +63,7 @@ After all subgoals complete:
 
 - Clear separation of concerns
 - Each layer can be tested independently
-- Parallel development possible once interfaces are defined
+- Parallel development is possible only after interfaces are defined and writers are isolated
 - Easy to swap implementations within a layer
 
 ## Considerations

@@ -3,19 +3,21 @@
 ## Template
 
 ```
-Build or deliver [DATA PIPELINE/ETL JOB] in [DATA FRAMEWORK/PROJECT].
-It should include [DATA SOURCES], with [TRANSFORMATION LOGIC], [VALIDATION RULES], and [DESTINATION SCHEMA].
-Make it meet [DATA QUALITY STANDARDS], using [PROCESSING FRAMEWORK], [SCHEDULING SYSTEM], and [MONITORING/ALERTING].
-Output as [PIPELINE CODE/CONFIGURATION FILES/DOCUMENTATION].
+Goal: Deliver [DATA PIPELINE/ETL JOB].
+Context: [DATA FRAMEWORK/PROJECT], [DATA SOURCES], [DESTINATION], and [SCHEDULING SYSTEM].
+Output: [PIPELINE CODE/CONFIGURATION/DOCUMENTATION] implementing [TRANSFORMATIONS], [VALIDATION], and [MONITORING].
+Boundaries: Preserve [SOURCE/DESTINATION CONTRACTS]; require approval for [PRODUCTION DATA OR DEPLOYMENT].
+Verification: [FIXTURE RUN], [DATA QUALITY CHECKS], [IDEMPOTENCY CHECK], and lineage review.
 ```
 
 ## Example: E-commerce Sales Analytics Pipeline
 
 ```
-Build or deliver daily sales analytics pipeline in Apache Airflow project.
-It should include data extraction from PostgreSQL transaction database, transformation to aggregate metrics (daily sales, customer segments, product performance), validation for data completeness and accuracy, and loading to analytics warehouse (Snowflake).
-Make it meet enterprise data quality standards with 99.9% uptime, using Python with Pandas for transformations, Airflow for scheduling, and Datadog for monitoring/alerting.
-Output as Airflow DAGs, transformation scripts, dbt models, and pipeline documentation.
+Goal: Deliver a daily sales analytics pipeline in the existing Airflow project.
+Context: PostgreSQL transactions, Python/Pandas transforms, Snowflake, dbt, and Datadog.
+Output: Airflow DAGs, transformations, dbt models, validation, monitoring, and lineage documentation for daily sales, customer segments, and product performance.
+Boundaries: Use test fixtures rather than production data and do not deploy.
+Verification: Run the DAG against fixtures, validate completeness and accuracy, prove idempotency, and review the destination schema.
 ```
 
 ## Field Explanations

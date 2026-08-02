@@ -7,7 +7,7 @@ marketplace once, then pick which kits to install — globally or per-repo.
 
 | Plugin | What it is for | Skills | Start here |
 |---|---|---|---|
-| `agent-workflow-kit` | Turn broad tasks into goals, parallel subgoals, synthesis, and verification. | `goal-orchestrator` | `agent-workflow-kit/README.md` |
+| `agent-workflow-kit` | Turn broad work into safe, measurable goals with explicit launch and verified completion. | `goal-orchestrator` | `agent-workflow-kit/README.md` |
 | `yt-automation-kit` | Research, plan, title/SEO, thumbnail, and repurpose YouTube videos. | `yt-search`, `yt`, `seo`, `thumbnail`, `repurpose` | `yt-automation-kit/README.md` |
 | `video-understanding-kit` | Analyze local videos with Gemini multimodal models and timestamped answers. | `video-understanding` | `video-understanding-kit/README.md` |
 
@@ -70,8 +70,11 @@ the skill's `SKILL.md`), which Claude Code resolves correctly for **personal,
 project, and plugin** installs — so the **same SKILL.md works under both the
 marketplace install and this manual copy** with no edits.
 
-For Codex, copy the skill folder into your configured Codex skills directory and
-restart Codex if needed.
+For Codex, copy a skill folder into `$CODEX_HOME/skills` (normally
+`~/.codex/skills`) or into a repo-scoped `.agents/skills` directory. Codex also
+discovers user-level skills under `~/.agents/skills`. Confirm installation with
+the Skills UI, `/skills`, or a `$skill-name` mention; restart only if an update
+does not appear automatically.
 
 ## How the repo is organized
 

@@ -26,18 +26,37 @@ Output as refactored code with passing tests and performance benchmarks.
 
 ```
 /goal Refactor [MODULE] with [IMPROVEMENTS] while preserving all behavior.
-Done only when [TEST SUITE] exits 0, [LINTER] passes, and [PERFORMANCE BENCHMARK] shows no regression, proven by running all checks and showing their output in this conversation.
-Constraints: Do not change external API contracts; all existing tests must pass; add tests for new code.
-Stop after 30 turns if not met and report what remains.
+
+Done when:
+- The intended structure is simpler without changing observable behavior.
+- Existing and focused regression tests pass.
+
+Constraints:
+- Do not change external API contracts.
+- Keep changes inside [MODULE].
+
+Verification:
+- `[TEST SUITE]` exits 0 and `[LINTER]` passes.
+- `[PERFORMANCE BENCHMARK]` shows no regression.
+- The final diff is reviewed for behavior changes.
 ```
 
 ## Example Goal Condition
 
 ```
 /goal Refactor payment processing module with extracted functions and improved error handling while preserving all behavior.
-Done only when pytest -q exits 0, ruff check . passes, and benchmarks show no performance regression, proven by running all checks and showing their output in this conversation.
-Constraints: Do not change payment API contracts; all existing tests must pass; add unit tests for extracted functions.
-Stop after 30 turns if not met and report what remains.
+
+Done when:
+- Duplicate payment logic is extracted and error handling is clearer.
+- All existing payment behavior and API contracts remain unchanged.
+
+Constraints:
+- Do not change payment API contracts or unrelated modules.
+
+Verification:
+- `pytest -q` exits 0 and `ruff check .` passes.
+- The performance benchmark shows no regression.
+- The final diff is reviewed for behavior changes.
 ```
 
 ## Verification Methods
@@ -77,7 +96,8 @@ Stop after 30 turns if not met and report what remains.
 - [ ] Refactoring scope is clearly defined
 - [ ] API contracts are identified
 - [ ] Safety checks are in place
-- [ ] Turn limit set appropriately (25-35 turns)
+- [ ] Goal body is within 4,000 characters
+- [ ] Commit, push, and publication authority are explicit
 
 ## Subgoal Splitting Pattern
 

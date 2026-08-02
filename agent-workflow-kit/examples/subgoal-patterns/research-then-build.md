@@ -2,11 +2,11 @@
 
 ## When to Use
 
-Use this pattern when the task requires significant research, exploration, or learning before implementation.
+Use this pattern during an explicitly requested run when the task requires significant research before implementation.
 
 ## Pattern
 
-Split work into research/exploration phase and implementation phase, with clear handoff.
+Split work into a read-only research phase and a later implementation phase with a verified handoff. Do not start implementation until the main agent has reconciled the research with the workspace and approved brief.
 
 ## Example: Implementing a New Authentication System
 

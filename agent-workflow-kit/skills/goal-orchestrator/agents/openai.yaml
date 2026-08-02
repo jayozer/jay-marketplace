@@ -1,0 +1,4 @@
+interface:
+  display_name: "Goal Orchestrator"
+  short_description: "Turn broad work into a safe, verifiable Codex goal"
+  default_prompt: "Use $goal-orchestrator to turn this request into an execution-ready brief and native Codex goal, then launch it here or in a new task on explicit request."

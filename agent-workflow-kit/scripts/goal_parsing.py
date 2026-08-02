@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
-"""Shared parsing of /goal blocks, used by extract_goal.py and benchmark_goals.py.
+"""Shared parsing of Codex /goal blocks.
 
-The canonical goal format this parses (see SKILL.md section 3):
+The canonical format is:
 
-    /goal [ONE-SENTENCE OBJECTIVE].
-    Done only when [END STATE], proven by [COMMAND] with its output shown in this conversation.
-    Constraints: [CONSTRAINT]; [CONSTRAINT].
-    Stop after [N] turns if not met and report what remains.
+    /goal <specific outcome>
 
-The same fields may also appear on a single line.
+    Done when:
+    - <measurable acceptance criterion>
+
+    Constraints:
+    - <scope, compatibility, approval, or non-goal boundary>
+
+    Verification:
+    - <command, observation, or review criterion>
+
+Legacy one-line goals and optional ``Stop after N turns`` clauses remain
+readable for backward-compatible extraction.
 """
 
 from __future__ import annotations
@@ -18,37 +25,92 @@ import re
 from pathlib import Path
 from typing import Any
 
-# `/goal <subcommand>` mentions are commands, not goal conditions.
-GOAL_SUBCOMMANDS = {"clear", "stop", "off", "reset", "none", "cancel", "--resume"}
+
+CURRENT_GOAL_SUBCOMMANDS = {"edit", "pause", "resume", "clear"}
+LEGACY_GOAL_SUBCOMMANDS = {"stop", "off", "reset", "none", "cancel", "--resume"}
+GOAL_SUBCOMMANDS = CURRENT_GOAL_SUBCOMMANDS | LEGACY_GOAL_SUBCOMMANDS
+SECTION_HEADINGS = {"done when:", "constraints:", "verification:"}
+LEGACY_PREFIXES = ("done only when", "constraints:", "verification:", "stop after")
 
 # Directories skipped when scanning a directory for markdown files.
-PRUNED_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", "vendor"}
+PRUNED_DIRS = {
+    ".git",
+    "node_modules",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "dist",
+    "build",
+    "vendor",
+}
+
+
+def _next_nonempty(lines: list[str], start: int) -> str:
+    for line in lines[start:]:
+        if line.strip():
+            return line.strip()
+    return ""
 
 
 def find_goal_blocks(text: str) -> list[str]:
-    """Find goal blocks: a line starting with '/goal ' plus its contiguous following lines.
-
-    A block ends at a blank line, a code-fence marker, a heading, or the next /goal line.
-    Prose mentions like 'skills/goal-orchestrator' or '/goal clear' are not goal blocks.
-    """
+    """Find canonical and legacy goal blocks without treating subcommands as goals."""
     blocks: list[str] = []
     lines = text.splitlines()
     i = 0
+
     while i < len(lines):
         stripped = lines[i].strip()
-        rest = stripped[len("/goal "):].strip() if stripped.startswith("/goal ") else ""
-        if rest and rest.split()[0] not in GOAL_SUBCOMMANDS:
-            block = [rest]
+        rest = stripped[len("/goal ") :].strip() if stripped.startswith("/goal ") else ""
+        first_word = rest.split()[0] if rest else ""
+        if not rest or first_word in GOAL_SUBCOMMANDS:
             i += 1
-            while i < len(lines):
-                line = lines[i].strip()
-                if not line or line.startswith(("```", "#", "/goal")):
-                    break
+            continue
+
+        block = [rest]
+        current_section: str | None = None
+        i += 1
+
+        while i < len(lines):
+            line = lines[i].strip()
+            lower = line.lower()
+
+            if line.startswith(("```", "#", "/goal")):
+                break
+
+            if not line:
+                following = _next_nonempty(lines, i + 1).lower()
+                if following in SECTION_HEADINGS:
+                    i += 1
+                    continue
+                break
+
+            if lower in SECTION_HEADINGS:
+                current_section = lower[:-1]
                 block.append(line)
                 i += 1
-            blocks.append("\n".join(block))
-        else:
-            i += 1
+                continue
+
+            if current_section and line.startswith(("- ", "* ")):
+                block.append(line)
+                i += 1
+                continue
+
+            if lower.startswith(LEGACY_PREFIXES):
+                block.append(line)
+                i += 1
+                continue
+
+            # Allow a wrapped line inside a structured section, but do not absorb
+            # unrelated prose that follows a complete goal block.
+            if current_section and block[-1].startswith(("- ", "* ")):
+                block[-1] = f"{block[-1]} {line}"
+                i += 1
+                continue
+
+            break
+
+        blocks.append("\n".join(block))
+
     return blocks
 
 
@@ -59,11 +121,63 @@ def _extract_field(block: str, pattern: str) -> str | None:
     return match.group(1).rstrip(" .")
 
 
+def _section_items(block: str, heading: str) -> list[str]:
+    lines = block.splitlines()
+    items: list[str] = []
+    collecting = False
+
+    for line in lines[1:]:
+        stripped = line.strip()
+        lower = stripped.lower()
+        if lower in SECTION_HEADINGS:
+            collecting = lower == f"{heading.lower()}:"
+            continue
+        if collecting and stripped.startswith(("- ", "* ")):
+            items.append(stripped[2:].strip().rstrip(" ."))
+        elif collecting and stripped:
+            items.append(stripped.rstrip(" ."))
+
+    return [item for item in items if item]
+
+
+def _legacy_done_when(block: str) -> list[str]:
+    text = _extract_field(
+        block,
+        r"Done only when\s+(.+?)(?=,?\s+proven by|\s+Constraints:|\s+Verification:|\s+Stop after\s+\d|$)",
+    )
+    return [text] if text else []
+
+
 def _extract_constraints(block: str) -> list[str]:
-    text = _extract_field(block, r"Constraints:\s*(.+?)(?=\s+Stop after\s+\d|$)")
+    structured = _section_items(block, "constraints")
+    if structured:
+        return structured
+
+    text = _extract_field(
+        block,
+        r"Constraints:\s*(.+?)(?=\s+Verification:|\s+Stop after\s+\d|$)",
+    )
     if not text:
         return []
     return [item.strip(" .") for item in text.split(";") if item.strip(" .")]
+
+
+def _extract_verification(block: str) -> str | None:
+    structured = _section_items(block, "verification")
+    if structured:
+        return "; ".join(structured)
+
+    explicit = _extract_field(
+        block,
+        r"Verification:\s*(.+?)(?=\s+Stop after\s+\d|$)",
+    )
+    if explicit:
+        return explicit
+
+    return _extract_field(
+        block,
+        r"Done only when\s+(.+?)(?=\s+Constraints:|\s+Stop after\s+\d|$)",
+    )
 
 
 def _extract_turn_limit(block: str) -> int | None:
@@ -72,17 +186,19 @@ def _extract_turn_limit(block: str) -> int | None:
 
 
 def parse_goal(block: str) -> dict[str, Any]:
-    """Parse one goal block into its four parts."""
+    """Parse one goal body while preserving the legacy output fields."""
     first_line = block.splitlines()[0]
     objective = re.split(r"(?<=[.!?])\s", first_line)[0].strip()
+    done_when = _section_items(block, "done when") or _legacy_done_when(block)
+
     return {
         "goal": block,
         "objective": objective,
-        "verification": _extract_field(
-            block, r"Done only when\s+(.+?)(?=\s+Constraints:|\s+Stop after\s+\d|$)"
-        ),
+        "verification": _extract_verification(block),
         "constraints": _extract_constraints(block),
         "turn_limit": _extract_turn_limit(block),
+        "done_when": done_when,
+        "character_count": len(block),
     }
 
 
@@ -102,7 +218,9 @@ def iter_markdown_files(root: Path):
     """Yield .md files under root, skipping vendored and hidden directories."""
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = sorted(
-            name for name in dirnames if name not in PRUNED_DIRS and not name.startswith(".")
+            name
+            for name in dirnames
+            if name not in PRUNED_DIRS and not name.startswith(".")
         )
         for filename in sorted(filenames):
             if filename.endswith(".md"):
@@ -110,11 +228,7 @@ def iter_markdown_files(root: Path):
 
 
 def collect_goals(inputs: list[str]) -> tuple[list[dict[str, Any]], list[str]]:
-    """Resolve CLI inputs (file, directory, or literal '/goal ...' text) into parsed goals.
-
-    A nonexistent path is an error unless the argument itself is /goal text —
-    a typo'd filename must not be silently reinterpreted as a goal.
-    """
+    """Resolve file, directory, or literal /goal inputs into parsed goals."""
     goals: list[dict[str, Any]] = []
     errors: list[str] = []
     for item in inputs:

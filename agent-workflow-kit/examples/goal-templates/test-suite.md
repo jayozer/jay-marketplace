@@ -26,18 +26,36 @@ Output as test files with coverage report and CI configuration.
 
 ```
 /goal Create test suite for [MODULE] with [COVERAGE TARGET] coverage.
-Done only when [COVERAGE COMMAND] shows [TARGET]% coverage and [TEST COMMAND] exits 0, proven by running both commands and showing their output in this conversation.
-Constraints: Do not modify production code; use existing test patterns; mock external dependencies.
-Stop after 25 turns if not met and report what remains.
+
+Done when:
+- Critical behavior, failure paths, and edge cases have deterministic coverage.
+- Coverage reaches [COVERAGE TARGET] without weakening existing tests.
+
+Constraints:
+- Do not modify production code.
+- Use existing test patterns and mock external dependencies.
+
+Verification:
+- `[COVERAGE COMMAND]` shows [TARGET]% coverage.
+- `[TEST COMMAND]` exits 0.
 ```
 
 ## Example Goal Condition
 
 ```
 /goal Create test suite for authentication module with 80% code coverage.
-Done only when npm run coverage shows 80%+ coverage and npm test exits 0, proven by running both commands and showing their output in this conversation.
-Constraints: Do not modify production code; use existing Jest patterns; mock database and external APIs.
-Stop after 25 turns if not met and report what remains.
+
+Done when:
+- Authentication success, validation, authorization, expiry, and error paths are covered.
+- Coverage reaches at least 80% without weakening existing assertions.
+
+Constraints:
+- Do not modify production code.
+- Use existing Jest patterns and mock the database and external APIs.
+
+Verification:
+- `npm run coverage` shows at least 80% coverage.
+- `npm test` exits 0.
 ```
 
 ## Verification Methods
@@ -71,7 +89,8 @@ Stop after 25 turns if not met and report what remains.
 - [ ] Coverage tool is configured
 - [ ] Mocking strategy is defined
 - [ ] Coverage target is realistic
-- [ ] Turn limit set appropriately (20-30 turns)
+- [ ] Goal body is within 4,000 characters
+- [ ] Commit, push, and publication authority are explicit
 
 ## Subgoal Splitting Pattern
 
@@ -100,4 +119,4 @@ If the goal loops without progress:
 1. Check if coverage target is realistic for the module
 2. Verify mocking strategy is working correctly
 3. Break into supervised orchestration by test type
-4. Run `/goal clear` and restart with lower coverage target
+4. Ask the user to edit, pause, or clear the goal before changing the coverage target

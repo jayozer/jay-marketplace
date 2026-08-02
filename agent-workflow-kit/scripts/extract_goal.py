@@ -52,6 +52,11 @@ def main() -> int:
         for i, goal in enumerate(goals, 1):
             output += f"## Goal {i}\n\n"
             output += f"**Objective:** {goal['objective']}\n\n"
+            if goal.get("done_when"):
+                output += "**Done When:**\n"
+                for criterion in goal["done_when"]:
+                    output += f"- {criterion}\n"
+                output += "\n"
             if goal.get('verification'):
                 output += f"**Verification:** {goal['verification']}\n\n"
             if goal.get('constraints'):
@@ -60,7 +65,8 @@ def main() -> int:
                     output += f"- {constraint}\n"
                 output += "\n"
             if goal.get('turn_limit'):
-                output += f"**Turn Limit:** {goal['turn_limit']}\n\n"
+                output += f"**Legacy Turn Limit:** {goal['turn_limit']}\n\n"
+            output += f"**Character Count:** {goal['character_count']}\n\n"
             output += "---\n\n"
 
     if args.output:

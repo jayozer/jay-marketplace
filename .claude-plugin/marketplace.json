@@ -12,9 +12,9 @@
     {
       "name": "agent-workflow-kit",
       "source": "./agent-workflow-kit",
-      "description": "Turn a broad task into a filled brief, a top-level goal, parallel subgoals, synthesis, and verification.",
+      "description": "Turn broad work into a safe, measurable goal with explicit launch, selective delegation, and verified completion.",
       "category": "workflow",
-      "keywords": ["goals", "subagents", "orchestration", "planning"]
+      "keywords": ["codex", "goals", "subagents", "orchestration", "planning"]
     },
     {
       "name": "yt-automation-kit",

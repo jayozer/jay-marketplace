@@ -2,11 +2,11 @@
 
 ## When to Use
 
-Use this pattern when building multiple independent features that can be developed in parallel.
+Use this pattern during an explicitly requested run when multiple independent features can be developed in parallel.
 
 ## Pattern
 
-Split work by independent features, with each subagent handling one complete feature end-to-end.
+Split work by independent features, with each subagent handling one complete feature end-to-end. Give every concurrent writer an isolated worktree; otherwise use one implementation owner and delegate read-only support.
 
 ## Example: Building an E-commerce Dashboard
 
@@ -69,6 +69,7 @@ After all subgoals complete:
 ## Considerations
 
 - Ensure features are truly independent
+- Do not run multiple writers in one checkout
 - Watch for shared state or dependencies
 - Coordinate on shared UI components
 - Plan integration testing carefully

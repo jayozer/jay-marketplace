@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Claude Code skill frontmatter and content structure in this kit."""
+"""Validate Codex skill frontmatter, UI metadata, and content structure."""
 
 from __future__ import annotations
 
@@ -13,27 +13,19 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS_DIR = ROOT / "skills"
-ALLOWED_FRONTMATTER_KEYS = {
-    "allowed-tools",
-    "argument-hint",
-    "description",
-    "license",
-    "metadata",
-    "name",
-    "user-invocable",
-}
+ALLOWED_FRONTMATTER_KEYS = {"description", "name"}
 
 # Required sections for goal-orchestrator skill
 REQUIRED_SECTIONS = {
     "goal-orchestrator": [
-        "Platform Adaptation",
-        "Fill the Brief",
-        "Is This `/goal`-Shaped?",
-        "Write the Completion Condition",
-        "Pre-Flight",
-        "Launch and Walk Away",
-        "On Completion",
-        "Fallback: Supervised Orchestration",
+        "Ground the Request and Choose a Mode",
+        "Build the Brief",
+        "Decide Whether the Task Is Goal-Shaped",
+        "Draft the Native Goal",
+        "Preflight and Launch",
+        "Execute and Coordinate Work",
+        "Verify, Complete, or Block",
+        "Claude Code Compatibility",
     ]
 }
 
@@ -81,10 +73,47 @@ def validate_skill(skill_dir: Path, check_content: bool = False) -> list[str]:
             f"{skill_md.relative_to(ROOT)}: folder name should match skill name"
         )
 
+    if name:
+        errors.extend(validate_openai_yaml(skill_dir, name))
+
     # Content validation
     if check_content and name:
         content_errors = validate_skill_content(name, content, skill_md, frontmatter)
         errors.extend(content_errors)
+
+    return errors
+
+
+def validate_openai_yaml(skill_dir: Path, skill_name: str) -> list[str]:
+    """Validate the recommended Codex UI metadata when present."""
+    metadata_path = skill_dir / "agents" / "openai.yaml"
+    if not metadata_path.exists():
+        return [f"{metadata_path.relative_to(ROOT)}: missing recommended UI metadata"]
+
+    try:
+        metadata = yaml.safe_load(metadata_path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        return [f"{metadata_path.relative_to(ROOT)}: invalid YAML: {exc}"]
+
+    interface = metadata.get("interface") if isinstance(metadata, dict) else None
+    if not isinstance(interface, dict):
+        return [f"{metadata_path.relative_to(ROOT)}: missing interface mapping"]
+
+    errors: list[str] = []
+    display_name = interface.get("display_name")
+    short_description = interface.get("short_description")
+    default_prompt = interface.get("default_prompt")
+
+    if not isinstance(display_name, str) or not display_name.strip():
+        errors.append(f"{metadata_path.relative_to(ROOT)}: missing display_name")
+    if not isinstance(short_description, str) or not 25 <= len(short_description) <= 64:
+        errors.append(
+            f"{metadata_path.relative_to(ROOT)}: short_description must be 25-64 characters"
+        )
+    if not isinstance(default_prompt, str) or f"${skill_name}" not in default_prompt:
+        errors.append(
+            f"{metadata_path.relative_to(ROOT)}: default_prompt must mention ${skill_name}"
+        )
 
     return errors
 
@@ -131,27 +160,11 @@ def validate_skill_content(
                 f"{skill_md.relative_to(ROOT)}: broken internal link '{link_text}' -> '#{anchor}'"
             )
 
-    allowed_tools = frontmatter.get("allowed-tools")
-    if allowed_tools is not None:
-        if isinstance(allowed_tools, str):
-            valid = bool(allowed_tools.strip())
-        elif isinstance(allowed_tools, list):
-            valid = bool(allowed_tools) and all(
-                isinstance(tool, str) and tool.strip() for tool in allowed_tools
-            )
-        else:
-            valid = False
-        if not valid:
-            errors.append(
-                f"{skill_md.relative_to(ROOT)}: allowed-tools must be a"
-                " non-empty string or list of tool names"
-            )
-
     return errors
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate Claude Code skills")
+    parser = argparse.ArgumentParser(description="Validate Codex skills")
     parser.add_argument(
         "--check-content",
         action="store_true",
