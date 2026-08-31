@@ -1,12 +1,12 @@
-# Agent Workflow Kit
+# Goal Orchestrator
 
 **Codex-first workflow tools for turning broad requests into safe, measurable goals and verified results.**
 
 > Native Codex `/goal` is the persistence and execution engine. `$goal-orchestrator` is the planner and project manager that prepares work for that engine.
 
-## What This Kit Does
+## What Goal Orchestrator Does
 
-Use the kit when a request needs more structure before long-running execution. It helps Codex:
+Use Goal Orchestrator when a request needs more structure before long-running execution. It helps Codex:
 
 - inspect the actual workspace before defining the work;
 - turn a broad request into an execution-ready brief;
@@ -173,9 +173,9 @@ Running extracted commands is opt-in and executes shell content from the input:
 python3 scripts/benchmark_goals.py goal.md --test-commands --cwd /path/to/project
 ```
 
-## Validate the Kit
+## Validate Goal Orchestrator
 
-From `agent-workflow-kit/`:
+From `goal-orchestrator/`:
 
 ```bash
 pip install -r requirements-dev.txt

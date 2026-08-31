@@ -7,7 +7,7 @@ marketplace once, then pick which kits to install — globally or per-repo.
 
 | Plugin | What it is for | Skills | Start here |
 |---|---|---|---|
-| `agent-workflow-kit` | Turn broad work into safe, measurable goals with explicit launch and verified completion. | `goal-orchestrator` | `agent-workflow-kit/README.md` |
+| `goal-orchestrator` | Turn broad work into safe, measurable goals with explicit launch and verified completion. | `goal-orchestrator` | `goal-orchestrator/README.md` |
 | `yt-automation-kit` | Research, plan, title/SEO, thumbnail, and repurpose YouTube videos. | `yt-search`, `yt`, `seo`, `thumbnail`, `repurpose` | `yt-automation-kit/README.md` |
 | `video-understanding-kit` | Analyze local videos with Gemini multimodal models and timestamped answers. | `video-understanding` | `video-understanding-kit/README.md` |
 
@@ -23,7 +23,7 @@ In Claude Code:
 /plugin
 
 # ...or install a specific kit directly
-/plugin install agent-workflow-kit@jay-marketplace
+/plugin install goal-orchestrator@jay-marketplace
 /plugin install yt-automation-kit@jay-marketplace
 /plugin install video-understanding-kit@jay-marketplace
 ```
@@ -40,7 +40,7 @@ claude plugin install yt-automation-kit@jay-marketplace
 When installing through the `/plugin` menu you pick a **scope**:
 
 - **User** — available in every project on your machine (good for general tools
-  like `agent-workflow-kit`).
+  like `goal-orchestrator`).
 - **Project** — recorded in the repo's `.claude/settings.json` and committed, so
   teammates who trust the workspace get prompted to install it too.
 - **Local** — recorded in `.claude/settings.local.json` (gitignored); a personal,
@@ -55,6 +55,21 @@ scope from inside that repo, then commit the resulting `.claude/settings.json`.
 /plugin marketplace update jay-marketplace   # pull the latest kits
 /plugin uninstall yt-automation-kit@jay-marketplace
 ```
+
+### Migrating from `agent-workflow-kit`
+
+The goal orchestration plugin was renamed to match its only skill. Existing
+installations should replace the old marketplace package explicitly:
+
+```text
+/plugin uninstall agent-workflow-kit@jay-marketplace
+/plugin marketplace update jay-marketplace
+/plugin install goal-orchestrator@jay-marketplace
+```
+
+The skill invocation remains `$goal-orchestrator`; only the marketplace package
+name changed. For a Project-scope installation, reinstall at that scope and
+commit the resulting `.claude/settings.json` update.
 
 ## Manual install (no marketplace)
 
@@ -102,5 +117,5 @@ for validating skill frontmatter locally.
 
 ```bash
 claude plugin validate .                       # marketplace.json
-claude plugin validate ./agent-workflow-kit    # an individual plugin
+claude plugin validate ./goal-orchestrator     # an individual plugin
 ```
