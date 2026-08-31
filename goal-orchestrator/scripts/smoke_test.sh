@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Smoke test for agent-workflow-kit: skill structure + helper scripts.
-# Usage: bash agent-workflow-kit/scripts/smoke_test.sh   (from anywhere)
+# Smoke test for goal-orchestrator: skill structure + helper scripts.
+# Usage: bash goal-orchestrator/scripts/smoke_test.sh   (from anywhere)
 set -uo pipefail
 
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

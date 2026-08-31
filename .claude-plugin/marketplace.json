@@ -5,13 +5,13 @@
     "email": "jayozer@gmail.com"
   },
   "metadata": {
-    "description": "Installable AI-agent skill kits: agent workflows, YouTube automation, and Gemini video understanding.",
+    "description": "Installable AI-agent skill kits: goal orchestration, YouTube automation, and Gemini video understanding.",
     "version": "1.0.0"
   },
   "plugins": [
     {
-      "name": "agent-workflow-kit",
-      "source": "./agent-workflow-kit",
+      "name": "goal-orchestrator",
+      "source": "./goal-orchestrator",
       "description": "Turn broad work into a safe, measurable goal with explicit launch, selective delegation, and verified completion.",
       "category": "workflow",
       "keywords": ["codex", "goals", "subagents", "orchestration", "planning"]

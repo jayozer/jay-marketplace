@@ -61,7 +61,7 @@ Each plugin (kit) follows this structure:
 
 ## Skill Architecture
 
-### 1. Goal Orchestrator (agent-workflow-kit)
+### 1. Goal Orchestrator (`goal-orchestrator`)
 
 **Purpose:** Turn broad tasks into verifiable `/goal` commands for autonomous execution
 
@@ -461,7 +461,7 @@ Step 5: /repurpose
 
 Plugins can be installed at three scopes:
 
-1. **User scope:** Available in every project on the machine (good for general tools like agent-workflow-kit)
+1. **User scope:** Available in every project on the machine (good for general tools like goal-orchestrator)
    - Location: `~/.claude/skills/`
    
 2. **Project scope:** Recorded in repo's `.claude/settings.json`, committed to git
@@ -503,7 +503,7 @@ Plugins can be installed at three scopes:
 ## Dependencies
 
 ### Python Dependencies
-- **agent-workflow-kit:** None (pure orchestration)
+- **goal-orchestrator:** None (pure orchestration)
 - **video-understanding-kit:** `google-genai` (Gemini API)
 - **yt-automation-kit:** `yt-dlp` (YouTube), Kie.ai SDK (thumbnails)
 

@@ -1,12 +1,12 @@
 {
-  "name": "agent-workflow-kit",
+  "name": "goal-orchestrator",
   "description": "Turn broad work into a safe, measurable native Codex goal with explicit launch, selective delegation, and verified completion.",
   "version": "2.0.0",
   "author": {
     "name": "Jay Ozer",
     "email": "jayozer@gmail.com"
   },
-  "homepage": "https://github.com/jayozer/jay-marketplace/tree/main/agent-workflow-kit",
+  "homepage": "https://github.com/jayozer/jay-marketplace/tree/main/goal-orchestrator",
   "repository": "https://github.com/jayozer/jay-marketplace",
   "license": "MIT",
   "keywords": ["codex", "goals", "subagents", "orchestration", "planning", "verification"]
