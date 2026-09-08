@@ -1,0 +1,13 @@
+schema_version: "1.1"
+name: active-goal-conflict
+description: With a goal already active, the skill warns that a new /goal replaces it and asks how to proceed.
+tags: [goal-orchestrator, lifecycle]
+runs: 1
+context:
+  # Copies fixtures/sample-repo into the sandbox cwd; requires --scaffold on the run.
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Read, Grep, Glob, Bash]
+  append_system_prompt: "You are in Claude Code 2.1.263. There is no goal tool available to you."
