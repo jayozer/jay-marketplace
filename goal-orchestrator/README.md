@@ -42,8 +42,8 @@ Constraints:
 - Do not add dependencies, commit, push, or deploy.
 
 Verification:
-- Run the focused authentication tests and the full test suite.
-- Review the final diff for unrelated changes.
+- Run the focused authentication tests and the full test suite; show each summary line.
+- Review the final diff for unrelated changes; show `git diff --stat`.
 ```
 
 ### Use `$goal-orchestrator`
@@ -84,10 +84,10 @@ Constraints:
 - <scope, compatibility, approval, or non-goal boundary>
 
 Verification:
-- <command, observation, or review criterion proving completion>
+- <command and the printed output that proves it, or the observation or review evidence to show>
 ```
 
-The goal body must be no more than 4,000 characters. Put background detail in the preceding brief or a referenced file. A textual turn cap is not required. Supply a native token budget only when the user explicitly asks for one.
+The goal body must be no more than 4,000 characters. Put background detail in the preceding brief or a referenced file. Each verification bullet names the output that proves it, because the native checker judges only what the conversation shows. In Codex a textual turn cap is not required; supply a native token budget only when the user explicitly asks for one. In Claude Code, offer an optional `or stop after N turns` clause, and treat a stop at the cap as unsuccessful, not complete.
 
 ## Codex Goal Lifecycle
 
@@ -137,9 +137,9 @@ Current Codex releases also discover user-level skills under `~/.agents/skills`.
 
 ## Claude Code Compatibility
 
-The skill retains a small Claude Code compatibility layer for the shared brief, safety, delegation, and verification workflow. Use current Claude Code documentation for its native goal and agent controls; do not project Codex lifecycle details onto Claude Code.
+The skill retains a small Claude Code compatibility layer for the shared brief, safety, delegation, and verification workflow. In Claude Code the model cannot create a goal: `/goal <condition>` is a user command, so a run is a handover of the exact `/goal` text, and the checker judges only what the conversation shows. Use current Claude Code documentation for its native goal and agent controls; do not project Codex lifecycle details onto Claude Code.
 
-Manual Claude Code installation remains:
+Invoke it as `/goal-orchestrator:goal-orchestrator` after a marketplace install, or `/goal-orchestrator` after the manual copy below:
 
 ```bash
 mkdir -p ~/.claude/skills

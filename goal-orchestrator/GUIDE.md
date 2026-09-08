@@ -97,12 +97,14 @@ Constraints:
 - <scope, compatibility, approval, or non-goal boundary>
 
 Verification:
-- `<focused command>` exits 0.
-- `<broader command>` exits 0.
-- The final diff contains no unrelated changes.
+- `<focused command>` exits 0; show its summary line.
+- `<broader command>` exits 0; show its summary line.
+- The final diff contains no unrelated changes; show `git diff --stat`.
 ```
 
 The goal body becomes the execution prompt and completion criteria. Keep it at or below 4,000 characters. Move background detail into the brief or a referenced file.
+
+Each verification bullet names the output that proves it. The native checker judges only what the conversation shows, so a claim that a command passed, without its output, is not evidence.
 
 ### Good objective
 
@@ -129,7 +131,7 @@ Verification:
 
 ### Budgets
 
-Do not insert a conventional turn limit into every goal. When the runtime exposes a native token budget, pass it only when the user explicitly requests one. A budget limits a run; it does not define successful completion.
+In Codex, do not insert a conventional turn limit into every goal; pass the native token budget only when the user explicitly requests one. In Claude Code, an `or stop after N turns` clause is the only bound available, so offer it. A budget or cap limits a run; reaching it is an unsuccessful stop, not completion.
 
 ## Launch and Lifecycle
 
@@ -248,4 +250,4 @@ Use supervised planning or execution with explicit approval points. A persistent
 
 ## Claude Code Compatibility
 
-The brief, goal-shaped gate, explicit launch rule, safety boundaries, selective delegation, and final verification are portable. Claude Code goal commands, checker behavior, permissions, and agent tools can change independently, so translate those controls from current Claude Code documentation instead of copying Codex-specific lifecycle rules.
+The brief, goal-shaped gate, explicit launch rule, safety boundaries, selective delegation, and final verification are portable. Claude Code exposes no goal tool to the model: `/goal <condition>` is a user command, so a run there is a handover of the exact `/goal` text (or `claude -p "/goal ..."` for a headless run), and the checker judges only what the conversation shows. Invoke the skill as `/goal-orchestrator:goal-orchestrator` from a marketplace install or `/goal-orchestrator` from a manual copy. Claude Code goal commands, checker behavior, permissions, and agent tools can change independently, so translate those controls from current Claude Code documentation instead of copying Codex-specific lifecycle rules.

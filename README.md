@@ -67,9 +67,14 @@ installations should replace the old marketplace package explicitly:
 /plugin install goal-orchestrator@jay-marketplace
 ```
 
-The skill invocation remains `$goal-orchestrator`; only the marketplace package
-name changed. For a Project-scope installation, reinstall at that scope and
-commit the resulting `.claude/settings.json` update.
+Invocation depends on the host. In Codex the mention is unchanged:
+`$goal-orchestrator`. In Claude Code, plugin skills are namespaced by plugin
+name, so the marketplace command changed from
+`/agent-workflow-kit:goal-orchestrator` to `/goal-orchestrator:goal-orchestrator`
+(the bare `/goal-orchestrator` also works when no other command uses that name).
+A manual copy into `~/.claude/skills/` is `/goal-orchestrator`. For a
+Project-scope installation, reinstall at that scope and commit the resulting
+`.claude/settings.json` update.
 
 ## Manual install (no marketplace)
 

@@ -127,7 +127,7 @@ If the goal loops without progress:
 1. Verify test coverage is adequate for the changes
 2. Check if refactoring scope is too large
 3. Break into supervised orchestration with smaller changes
-4. Run `/goal clear` and restart with more focused scope
+4. Ask the user to edit, pause, or clear the goal before restarting with more focused scope
 5. Consider reverting and trying a different approach
 
 ## Refactoring Principles

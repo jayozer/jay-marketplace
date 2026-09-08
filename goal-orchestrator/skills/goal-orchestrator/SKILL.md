@@ -61,12 +61,14 @@ Constraints:
 - <scope, compatibility, approval, or non-goal boundary>
 
 Verification:
-- <command, observation, or review criterion proving completion>
+- <command and the printed output that proves it, or the observation or review evidence to show>
 ```
 
-Keep the goal body at or below 4,000 characters. Put supporting detail in the preceding brief or a referenced file. Do not add a mandatory textual turn limit. Supply a native token budget only when the user explicitly requests one.
+Keep the goal body at or below 4,000 characters. Put supporting detail in the preceding brief or a referenced file. In Codex, do not add a mandatory textual turn limit; supply a native token budget only when the user explicitly requests one. In Claude Code, an `or stop after N turns` clause is the only bound available, so offer one. Reaching a budget or cap is an unsuccessful stop, not completion.
 
 Make the goal self-contained enough to serve as both the first execution prompt and the completion criteria. Include actual behavior and artifact checks; do not use a green test suite as the sole proof when it cannot establish the requested outcome.
+
+Write each verification bullet so the proof appears in the conversation: name the command and the output that must be shown, such as the test summary line, `git diff --stat`, the response body, or the file listing. The native checker judges only what the transcript shows. A statement that a command passed, without its output, is not evidence.
 
 ## 5. Preflight and Launch
 
@@ -140,4 +142,10 @@ Leave editing, pausing, resuming, and clearing to the user-facing Goal controls 
 
 ## Claude Code Compatibility
 
-Reuse the brief, goal-shaped gate, explicit-launch rule, permission boundaries, selective delegation, and independent final verification in Claude Code. Translate only the runtime-specific goal and agent controls using current Claude Code documentation; do not assume Codex tool names, lifecycle rules, or implementation details apply there.
+Reuse the brief, goal-shaped gate, explicit-launch rule, permission boundaries, selective delegation, and independent final verification in Claude Code. Do not assume Codex tool names, lifecycle rules, or implementation details apply there. Translate the goal and agent controls as follows, and consult current Claude Code documentation for anything not listed.
+
+- **Launch is a handover, never an action.** Claude Code exposes no goal tool to the model; `/goal <condition>` is a user command. In explicit run mode, return the exact `/goal` block for the user to run, or `claude -p "/goal ..."` for a headless run. Never report a goal as created, active, or launched.
+- **The checker reads only the conversation.** A separate small model judges the condition against the transcript; it cannot run commands or read files. Every verification bullet names output to be shown, and the agent prints that output before claiming completion.
+- **One goal per session, and a new `/goal` replaces it.** The model cannot inspect goal state. Before handing over, ask whether a goal is already active. Only `/goal` (view) and `/goal clear` exist; there is no edit, pause, or resume.
+- **Bounding is textual.** Offer an optional `or stop after N turns` clause. A stop at the cap is reported as an unsuccessful stop with the remaining work listed, not as completion.
+- **Completion is the checker's verdict.** There is no `update_goal`. Report commands, decisive output, skipped checks, and remaining risks in the final message so the checker can judge them.
