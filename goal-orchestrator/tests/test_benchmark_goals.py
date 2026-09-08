@@ -186,11 +186,19 @@ class TimeoutTests(unittest.TestCase):
 
 
 def _process_alive(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
+    """True while the process exists and is not a zombie.
+
+    A killed child whose parent never reaps it stays in state Z, and
+    ``os.kill(pid, 0)`` still succeeds for such a zombie, so inspect the
+    process state instead of mere PID existence.
+    """
+    probe = subprocess.run(
+        ["ps", "-o", "stat=", "-p", str(pid)], capture_output=True, text=True
+    )
+    state = probe.stdout.strip()
+    if probe.returncode != 0 or not state:
         return False
-    return True
+    return not state.startswith("Z")
 
 
 class CanRunTests(unittest.TestCase):
