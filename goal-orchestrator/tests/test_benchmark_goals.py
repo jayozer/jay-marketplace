@@ -159,7 +159,6 @@ class TimeoutTests(unittest.TestCase):
             analysis["issues"],
         )
 
-
     def test_timeout_kills_the_whole_process_group(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             spawner = Path(tmp) / "spawn.sh"
@@ -376,7 +375,6 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual(analysis["verification_commands"], ["true"])
         self.assertEqual(analysis["issues"], [])
 
-
     def test_legacy_turn_limit_gets_a_native_budget_suggestion(self) -> None:
         analysis = analyze_goal(
             parse_goal(
@@ -400,7 +398,6 @@ class AnalysisTests(unittest.TestCase):
 
         self.assertFalse(analysis["has_turn_limit"])
         self.assertFalse(any("Stop after N turns" in s for s in analysis["suggestions"]))
-
 
     def test_parser_diagnostics_become_issues(self) -> None:
         goal = parse_goal("Check. Done only when `pytest -q` exits 0, proven by running it.")

@@ -474,7 +474,7 @@ Plugins can be installed at three scopes:
 ### 5. Platform Adaptation
 - Skills are Codex-first, with a Claude Code compatibility section in SKILL.md
 - Runtime-specific goal and agent controls are translated per host
-- No translation table exists
+- No tool-name mapping table exists; runtime-specific controls are translated per host in SKILL.md
 
 ## Dependencies
 

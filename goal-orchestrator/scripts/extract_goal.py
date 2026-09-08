@@ -55,7 +55,10 @@ def main() -> int:
     for goal in goals:
         source = goal.get("source_file") or goal.get("source", "command_line")
         for diagnostic in goal.get("diagnostics", []):
-            print(f"WARNING: {source}: {diagnostic}", file=sys.stderr)
+            if source in diagnostic:
+                print(f"WARNING: {diagnostic}", file=sys.stderr)
+            else:
+                print(f"WARNING: {source}: {diagnostic}", file=sys.stderr)
             warned = True
 
     if args.format == "json":

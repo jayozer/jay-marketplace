@@ -350,7 +350,7 @@ class CollectGoalsTests(unittest.TestCase):
                 b"/goal Fix Caf\xe9. Done only when x exits 0, proven by running x.\n"
             )
             (root / "good.md").write_text(
-                "﻿/goal Real goal. Done only when echo ok exits 0, proven by running it.\n",
+                "\ufeff/goal Real goal. Done only when echo ok exits 0, proven by running it.\n",
                 encoding="utf-8",
             )
 
@@ -392,7 +392,7 @@ class ExtractGoalCliTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertIn(
-            f"WARNING: {path}: Goal block ended at line 3 of {path}: "
+            f"WARNING: Goal block ended at line 3 of {path}: "
             "unrecognized line 'not a bullet'",
             result.stderr,
         )
