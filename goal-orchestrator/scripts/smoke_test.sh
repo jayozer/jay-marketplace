@@ -2,6 +2,7 @@
 # Smoke test for goal-orchestrator: skill structure + helper scripts.
 # Usage: bash goal-orchestrator/scripts/smoke_test.sh   (from anywhere)
 set -uo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP="$(mktemp -d)"
@@ -43,7 +44,7 @@ missing = [g["source_file"] for g in goals if not (g["done_when"] and g["verific
 oversized = [g["source_file"] for g in goals if g["character_count"] > 4000]
 assert not missing, f"goals missing completion criteria or verification: {missing}"
 assert not oversized, f"goals over 4,000 characters: {oversized}"
-print(f"   {len(goals)} goals, all measurable, verifiable, and within 4,000 characters")
+print(f"   {len(goals)} goals, all with completion criteria and verification, and within 4,000 characters")
 '; then ok; else bad "extract_goal.py on goal-templates/"; fi
 
 step "5. Goal lifecycle commands and prose are not treated as goals"
@@ -69,19 +70,38 @@ print("  ", r["summary"]["total_goals"], "goals, 0 issues, multi-check commands 
 ' < "$TMP/bench.json"; then ok; else bad "benchmark summary wrong"; fi
 else bad "benchmark exited nonzero on own templates"; fi
 
-step "8. --test-commands runs real commands and flags missing ones (exit 127)"
-if python3 "$KIT/scripts/benchmark_goals.py" \
+step "8. --test-commands --yes runs real commands and fails the run on a missing one (exit 127)"
+python3 "$KIT/scripts/benchmark_goals.py" \
     "/goal A. Done only when echo hello exits 0, proven by running echo hello." \
     "/goal B. Done only when definitely-not-a-cmd-xyz exits 0, proven by running it." \
-    --test-commands 2>/dev/null | python3 -c '
+    --test-commands --yes -o "$TMP/tests.json" >/dev/null 2>&1
+STATUS=$?
+if [ "$STATUS" -ne 0 ] && python3 -c '
 import json, sys
-r = json.load(sys.stdin)
+r = json.load(open(sys.argv[1]))
 tests = {t["command"]: t for a in r["analyses"] for t in a.get("command_tests", [])}
 assert tests["echo hello"]["can_run"] and tests["echo hello"]["exit_code"] == 0
 assert not tests["definitely-not-a-cmd-xyz"]["can_run"]
 assert tests["definitely-not-a-cmd-xyz"]["exit_code"] == 127
-print("   echo ran; missing command reported as not runnable")
-'; then ok; else bad "--test-commands behavior"; fi
+issues = [i for a in r["analyses"] for i in a["issues"]]
+assert any("could not run" in i for i in issues), issues
+print("   echo ran and passed; the missing command failed the run (exit", sys.argv[2] + ")")
+' "$TMP/tests.json" "$STATUS"; then ok; else bad "--test-commands --yes behavior (exit $STATUS)"; fi
+
+step "8b. --test-commands without --yes lists commands and runs nothing"
+python3 "$KIT/scripts/benchmark_goals.py" \
+    "/goal A. Done only when touch $TMP/ran-without-yes exits 0, proven by running it." \
+    --test-commands -o "$TMP/skipped.json" >/dev/null 2>"$TMP/skipped.err"
+STATUS=$?
+if [ "$STATUS" -eq 0 ] && [ ! -e "$TMP/ran-without-yes" ] && python3 -c '
+import json, sys
+r = json.load(open(sys.argv[1]))
+assert r["execution"] == "skipped: pass --yes to run", r.get("execution")
+assert all(a["command_tests"] == [] for a in r["analyses"])
+listing = open(sys.argv[2]).read()
+assert "command_line: touch" in listing, listing
+print("   exit 0, nothing ran, execution reported as skipped")
+' "$TMP/skipped.json" "$TMP/skipped.err"; then ok; else bad "--test-commands without --yes (exit $STATUS)"; fi
 
 step "9. generate_brief.py emits the Codex brief without clobbering README values"
 mkdir -p "$TMP/proj"
@@ -109,6 +129,12 @@ goals = json.load(sys.stdin)
 assert len(goals) == 1 and goals[0]["objective"] == "Real goal.", goals
 print("   only real.md scanned")
 '; then ok; else bad "pruning"; fi
+
+step "11. benchmark_goals.py reports a goal-free file distinctly (exit 2)"
+printf '# Notes\n\nNo goal here.\n' > "$TMP/no-goal.md"
+OUT="$(python3 "$KIT/scripts/benchmark_goals.py" "$TMP/no-goal.md" 2>&1 >/dev/null)"
+STATUS=$?
+if [ "$STATUS" -eq 2 ] && echo "$OUT" | grep -q "No goals found."; then ok; else bad "expected exit 2 with 'No goals found.', got exit $STATUS: $OUT"; fi
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
