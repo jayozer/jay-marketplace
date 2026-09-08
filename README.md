@@ -126,3 +126,5 @@ for validating skill frontmatter locally.
 claude plugin validate .                       # marketplace.json
 claude plugin validate ./goal-orchestrator     # an individual plugin
 ```
+
+`.github/workflows/ci.yml` runs the unit tests, content validation, smoke suite, and manifest validation on every push and pull request.

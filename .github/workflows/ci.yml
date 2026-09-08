@@ -1,0 +1,57 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Unit tests
+        run: |
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s goal-orchestrator/tests -p 'test_*.py' -v
+
+      - name: Content validation
+        run: |
+          PYTHONDONTWRITEBYTECODE=1 uv run --quiet --with pyyaml python goal-orchestrator/scripts/validate_skills.py --check-content
+
+      - name: Smoke suite
+        run: |
+          PYTHONDONTWRITEBYTECODE=1 bash goal-orchestrator/scripts/smoke_test.sh
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validate plugin manifests
+        run: |
+          claude plugin validate .
+          claude plugin validate ./goal-orchestrator
+
+      - name: Scope sweep (no unsupported-host mentions outside reviews/)
+        run: |
+          # Pattern below is split across quotes so this sweep line never matches itself.
+          set +e
+          grep -rin 'ki''mi' --exclude-dir=reviews --exclude-dir=.git --include='*.md' --include='*.py' --include='*.sh' --include='*.json' --include='*.yaml' --include='*.yml' .
+          status=$?
+          set -e
+          [ "$status" -eq 1 ]
