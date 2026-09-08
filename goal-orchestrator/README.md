@@ -4,6 +4,8 @@
 
 > Native Codex `/goal` is the persistence and execution engine. `$goal-orchestrator` is the planner and project manager that prepares work for that engine.
 
+Supported hosts: Codex and Claude Code.
+
 ## What Goal Orchestrator Does
 
 Use Goal Orchestrator when a request needs more structure before long-running execution. It helps Codex:
@@ -66,7 +68,7 @@ That launches in the current task by default. To route the run elsewhere, reques
 Use $goal-orchestrator to launch this as a new Codex task.
 ```
 
-For Git projects, the new task starts in a Codex worktree by default. A requested branch/ref or the current working tree is used only when you name that starting state. The parent task keeps any existing Goal, and the new task creates and verifies its own Goal.
+For Git projects, the new task starts in a Codex worktree by default. A requested branch/ref or the current working tree is used only when you name that starting state. A new branch is created only when you ask for that exact name. The parent task keeps any existing Goal, and the new task creates and verifies its own Goal.
 
 Selecting the skill by itself uses **draft mode**. It does not create a goal, edit files, or spawn subagents.
 
@@ -85,6 +87,9 @@ Constraints:
 
 Verification:
 - <command and the printed output that proves it, or the observation or review evidence to show>
+
+If blocked:
+- <report what was tried and what would unblock progress, then stop>
 ```
 
 The goal body must be no more than 4,000 characters. Put background detail in the preceding brief or a referenced file. Each verification bullet names the output that proves it, because the native checker judges only what the conversation shows. In Codex a textual turn cap is not required; supply a native token budget only when the user explicitly asks for one. In Claude Code, offer an optional `or stop after N turns` clause, and treat a stop at the cap as unsuccessful, not complete.
@@ -119,7 +124,13 @@ Avoid multiple agents writing to the same checkout. Prefer one implementation ow
 
 ## Install for Codex
 
-Codex discovers personal skills from its configured skills directory. This checkout is currently compatible with `$CODEX_HOME/skills` (normally `~/.codex/skills`):
+Codex discovers personal skills under `~/.agents/skills`:
+
+```bash
+mkdir -p ~/.agents/skills && cp -R skills/goal-orchestrator ~/.agents/skills/
+```
+
+`$CODEX_HOME/skills` (normally `~/.codex/skills`) is a supported alternative that Codex's own skill installer still uses:
 
 ```bash
 mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
@@ -133,7 +144,7 @@ mkdir -p /path/to/repo/.agents/skills
 cp -R skills/goal-orchestrator /path/to/repo/.agents/skills/
 ```
 
-Current Codex releases also discover user-level skills under `~/.agents/skills`. Use the Skills UI, `/skills`, or a `$goal-orchestrator` mention to confirm discovery. Codex normally detects skill changes automatically; restart it if an update does not appear.
+Use the Skills UI, `/skills`, or a `$goal-orchestrator` mention to confirm discovery. Codex normally detects skill changes automatically; restart it if an update does not appear.
 
 ## Claude Code Compatibility
 
@@ -167,15 +178,15 @@ Benchmark goals without running their verification commands:
 python3 scripts/benchmark_goals.py examples/goal-templates
 ```
 
-Running extracted commands is opt-in and executes shell content from the input:
+Running extracted commands is opt-in and executes shell content from the input. `--test-commands` alone prints the extracted command list and runs nothing; add `--yes` to execute. `--timeout SECONDS` (default 30) bounds each command, and `--strict` turns unresolved placeholders such as `[TEST COMMAND]`, `<command>`, `{name}`, or `$NAME` in verification into issues:
 
 ```bash
-python3 scripts/benchmark_goals.py goal.md --test-commands --cwd /path/to/project
+python3 scripts/benchmark_goals.py goal.md --test-commands --yes --cwd /path/to/project
 ```
 
 ## Validate Goal Orchestrator
 
-From `goal-orchestrator/`:
+Requires Python 3.10 or newer. From `goal-orchestrator/`:
 
 ```bash
 pip install -r requirements-dev.txt
@@ -183,5 +194,7 @@ python3 scripts/validate_skills.py
 python3 scripts/validate_skills.py --check-content
 bash scripts/smoke_test.sh
 ```
+
+On Homebrew Python, `pip install -r requirements-dev.txt` fails with a PEP 668 externally-managed error; use a virtual environment instead. When PyYAML is missing, `smoke_test.sh` falls back to `uv run --with pyyaml` automatically (`uv` must be on PATH). `scripts/` and `examples/` are plugin-level authoring and verification tools; the skill directory ships only `SKILL.md` and `agents/openai.yaml`.
 
 See [GUIDE.md](GUIDE.md) for detailed goal authoring, approval boundaries, delegation patterns, and troubleshooting.

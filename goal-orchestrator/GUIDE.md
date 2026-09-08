@@ -100,6 +100,9 @@ Verification:
 - `<focused command>` exits 0; show its summary line.
 - `<broader command>` exits 0; show its summary line.
 - The final diff contains no unrelated changes; show `git diff --stat`.
+
+If blocked:
+- <report what was tried and what would unblock progress, then stop>
 ```
 
 The goal body becomes the execution prompt and completion criteria. Keep it at or below 4,000 characters. Move background detail into the brief or a referenced file.
@@ -154,7 +157,7 @@ Use this route only when the user explicitly asks for a new, separate, parallel,
 1. Do not call `create_goal` in the parent task.
 2. Discover the matching saved project with `list_projects` before calling `create_thread`.
 3. If the saved project is a Git repository, create a Codex worktree by default. Use the saved project directly only for a non-Git project or when the user explicitly requests it.
-4. Omit worktree `startingState` unless the user explicitly asks to start from a particular existing branch/ref or include the current working tree.
+4. Omit worktree `startingState` unless the user explicitly asks to start from a particular existing branch/ref, include the current working tree, or create a new branch with the exact name they gave via `onMissing: "create-branch"`. Never invent a branch name.
 5. Send the complete brief and Goal text in the new task's prompt, plus this guard:
 
    ```text
@@ -251,3 +254,5 @@ Use supervised planning or execution with explicit approval points. A persistent
 ## Claude Code Compatibility
 
 The brief, goal-shaped gate, explicit launch rule, safety boundaries, selective delegation, and final verification are portable. Claude Code exposes no goal tool to the model: `/goal <condition>` is a user command, so a run there is a handover of the exact `/goal` text (or `claude -p "/goal ..."` for a headless run), and the checker judges only what the conversation shows. Invoke the skill as `/goal-orchestrator:goal-orchestrator` from a marketplace install or `/goal-orchestrator` from a manual copy. Claude Code goal commands, checker behavior, permissions, and agent tools can change independently, so translate those controls from current Claude Code documentation instead of copying Codex-specific lifecycle rules.
+
+A goal does not change permission mode, so a walk-away run needs auto mode or pre-allowed verification and edit commands; Manual mode stalls at the first prompt. Wait for every subagent and background shell before ending a turn, because evaluation is skipped while they run. There is no blocked status: when a blocker persists, state it and what would unblock it in plain text, then stop.
