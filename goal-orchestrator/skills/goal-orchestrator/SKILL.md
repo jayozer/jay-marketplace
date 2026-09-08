@@ -114,6 +114,14 @@ For an explicitly requested new-task launch:
 
 For either destination, keep the existing sandbox and approval policy. Goal mode and task creation do not grant broader filesystem, network, connector, credential, or publication access.
 
+After launch or handover, report a launch record:
+
+- Runtime: Codex or Claude Code.
+- Workspace: repository path, branch, and commit.
+- Destination: current task, new task (with its real `threadId`), or handover of the `/goal` text.
+- Goal state: the result of the last `get_goal`, or "not launched: handed over".
+- Budget: the requested `token_budget` or turn clause, or "none".
+
 During execution, make conservative in-scope assumptions and record material ones. Request input when progress needs new authority, an irreversible action, or a product choice that would materially change the result.
 
 ## 6. Execute and Coordinate Work
@@ -157,3 +165,4 @@ Reuse the brief, goal-shaped gate, explicit-launch rule, permission boundaries, 
 - **Completion is the checker's verdict.** There is no `update_goal`. Report commands, decisive output, skipped checks, and remaining risks in the final message so the checker can judge them.
 - **Wait for delegated work.** Wait for every subagent and background shell before ending a turn; evaluation is skipped while they run.
 - **There is no `blocked` status.** When no tool call is made for several turns, the loop stops with the goal still set, so state the blocker and what would unblock it in plain text and stop working.
+- **A run can end without a verdict.** Unrecoverable errors such as expired credentials that Claude Code manages, exhausted credits, an uncompactable context, or an unavailable model clear the goal with a warning; tell the user to re-run `/goal` if that happens. Resuming a session restores an active goal but resets its turn count, timer, and token-spend baseline as shown by `/goal`; a textual turn clause is still judged from the conversation.

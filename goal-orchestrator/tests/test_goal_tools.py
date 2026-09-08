@@ -221,6 +221,15 @@ class GoalOrchestratorLaunchRoutingTests(unittest.TestCase):
         ):
             self.assertIn(phrase, self.skill)
 
+    def test_launch_record_and_run_ending_facts_are_documented(self) -> None:
+        for phrase in (
+            "report a launch record",
+            "Goal state:",
+            "A run can end without a verdict",
+            "resets its turn count",
+        ):
+            self.assertIn(phrase, self.skill)
+
 
 if __name__ == "__main__":
     unittest.main()

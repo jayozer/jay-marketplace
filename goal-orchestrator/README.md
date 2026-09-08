@@ -104,6 +104,8 @@ The goal body must be no more than 4,000 characters. Put background detail in th
 
 An active Goal blocks another Goal in the same task, not a Goal in a separate task. Goal mode keeps the task's existing sandbox and approval policy. It can still pause for user input, approval, or missing authority. Completing a goal requires real verification; passing tests alone is insufficient when they do not prove the requested behavior.
 
+Verified against Codex 0.151.0 and Claude Code 2.1.263 on 2026-09-07; re-check after upgrading.
+
 ## Delegation Rules
 
 The skill may spawn subagents only during an explicitly requested run. It delegates independent read-heavy work, tests, review, or isolated implementation, then waits and synthesizes the results.
@@ -121,6 +123,7 @@ Avoid multiple agents writing to the same checkout. Prefer one implementation ow
 - `scripts/benchmark_goals.py` — check goal structure, verification, and character limits.
 - `scripts/validate_skills.py` — validate skill metadata and required sections.
 - `GUIDE.md` — detailed authoring, lifecycle, delegation, and troubleshooting guidance.
+- `evals/` — behavioral acceptance cases for `claude plugin eval` (early access); see `evals/README.md`.
 
 ## Install for Codex
 
@@ -178,7 +181,7 @@ Benchmark goals without running their verification commands:
 python3 scripts/benchmark_goals.py examples/goal-templates
 ```
 
-Running extracted commands is opt-in and executes shell content from the input. `--test-commands` alone prints the extracted command list and runs nothing; add `--yes` to execute. `--timeout SECONDS` (default 30) bounds each command, and `--strict` turns unresolved placeholders such as `[TEST COMMAND]`, `<command>`, `{name}`, or `$NAME` in verification into issues:
+Running extracted commands is opt-in and executes shell content from the input. `--test-commands` alone prints the extracted command list and runs nothing; add `--yes` to execute. `--timeout SECONDS` (default 30) bounds each command, and `--strict` turns unresolved placeholders such as `[TEST COMMAND]`, `<command>`, `{name}`, or `$NAME` in the verification and completion criteria into issues:
 
 ```bash
 python3 scripts/benchmark_goals.py goal.md --test-commands --yes --cwd /path/to/project

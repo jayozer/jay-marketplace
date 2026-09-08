@@ -146,6 +146,8 @@ Before an explicit launch:
 4. Confirm the workspace, dirty tree, verification commands, and approval points.
 5. Start the goal without changing sandbox or approval settings.
 
+After launch or handover, report a launch record: the runtime (Codex or Claude Code), the workspace (repository path, branch, and commit), the destination (current task, new task with its real `threadId`, or handover of the `/goal` text), the goal state (the result of the last `get_goal`, or "not launched: handed over"), and the budget (the requested `token_budget` or turn clause, or "none").
+
 ### Launch in the current task
 
 This is the default when the user says only "start," "run," or "execute." Inspect the current task with `get_goal`. If an unfinished Goal already exists, preserve it and ask for direction; otherwise call `create_goal` here.
@@ -180,6 +182,8 @@ Codex provides these user controls:
 - `/goal clear` — remove it.
 
 The agent should not silently invoke those lifecycle controls. New authority, irreversible actions, or material product decisions still require the user.
+
+Runtime rules above were verified against Codex 0.151.0 and Claude Code 2.1.263 on 2026-09-07. The Codex three-turn blocked rule and the `create_goal` budget rule come from the CLI's embedded tool contract, not public documentation; re-check them after upgrading either host.
 
 ## Delegate Independent Work
 
@@ -255,4 +259,4 @@ Use supervised planning or execution with explicit approval points. A persistent
 
 The brief, goal-shaped gate, explicit launch rule, safety boundaries, selective delegation, and final verification are portable. Claude Code exposes no goal tool to the model: `/goal <condition>` is a user command, so a run there is a handover of the exact `/goal` text (or `claude -p "/goal ..."` for a headless run), and the checker judges only what the conversation shows. Invoke the skill as `/goal-orchestrator:goal-orchestrator` from a marketplace install or `/goal-orchestrator` from a manual copy. Claude Code goal commands, checker behavior, permissions, and agent tools can change independently, so translate those controls from current Claude Code documentation instead of copying Codex-specific lifecycle rules.
 
-A goal does not change permission mode, so a walk-away run needs auto mode or pre-allowed verification and edit commands; Manual mode stalls at the first prompt. Wait for every subagent and background shell before ending a turn, because evaluation is skipped while they run. There is no blocked status: when a blocker persists, state it and what would unblock it in plain text, then stop.
+A goal does not change permission mode, so a walk-away run needs auto mode or pre-allowed verification and edit commands; Manual mode stalls at the first prompt. Wait for every subagent and background shell before ending a turn, because evaluation is skipped while they run. There is no blocked status: when a blocker persists, state it and what would unblock it in plain text, then stop. Unrecoverable errors such as expired credentials that Claude Code manages, exhausted credits, an uncompactable context, or an unavailable model clear the goal with a warning, so tell the user to re-run `/goal`; resuming a session restores an active goal but resets its turn count, timer, and token-spend baseline as shown by `/goal`, and a textual turn clause is still judged from the conversation.
