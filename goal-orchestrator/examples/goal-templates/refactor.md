@@ -36,9 +36,12 @@ Constraints:
 - Keep changes inside [MODULE].
 
 Verification:
-- `[TEST SUITE]` exits 0 and `[LINTER]` passes.
-- `[PERFORMANCE BENCHMARK]` shows no regression.
-- The final diff is reviewed for behavior changes.
+- `[TEST SUITE]` exits 0 and `[LINTER]` passes; show the test summary line and the lint output.
+- `[PERFORMANCE BENCHMARK]` shows no regression; show the benchmark output.
+- The final diff is reviewed for behavior changes; show `git diff --stat`.
+
+If blocked:
+- Report what was tried and what would unblock progress, then stop.
 ```
 
 ## Example Goal Condition
@@ -54,9 +57,12 @@ Constraints:
 - Do not change payment API contracts or unrelated modules.
 
 Verification:
-- `pytest -q` exits 0 and `ruff check .` passes.
-- The performance benchmark shows no regression.
-- The final diff is reviewed for behavior changes.
+- `pytest -q` exits 0 and `ruff check .` passes; show the test summary line and the lint output.
+- The performance benchmark shows no regression; show the benchmark output.
+- The final diff is reviewed for behavior changes; show `git diff --stat`.
+
+If blocked:
+- If a behavior change appears necessary to simplify the code, report it and ask before proceeding.
 ```
 
 ## Verification Methods

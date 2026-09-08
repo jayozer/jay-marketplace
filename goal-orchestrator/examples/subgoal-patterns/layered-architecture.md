@@ -15,7 +15,7 @@ Split work by architectural layers, from bottom to top or top to bottom dependin
 Implement user database schema, migrations, and repository pattern.
 Context: Building user management feature in Express.js/PostgreSQL app.
 Deliverable: Prisma schema, migration files, repository classes with CRUD operations.
-Boundaries: Do not touch API routes or business logic yet. Focus only on data access.
+Boundaries: Do not touch API routes or business logic yet. Focus only on data access. Do not commit, push, open a pull request, deploy, add dependencies, or send messages.
 Verification: Run migrations and test repository operations with test database.
 Return: summary · migration files · repository code · test results · unknowns.
 ```
@@ -25,7 +25,7 @@ Return: summary · migration files · repository code · test results · unknown
 Implement user service layer with validation and business rules.
 Context: Data layer is complete from Subgoal 1. Need business logic for user operations.
 Deliverable: Service classes with validation, password hashing, email verification logic.
-Boundaries: Use repository from Subgoal 1. Do not create API routes yet.
+Boundaries: Use repository from Subgoal 1. Do not create API routes yet. Do not commit, push, open a pull request, deploy, add dependencies, or send messages.
 Verification: Unit tests for service layer with mocked repositories.
 Return: summary · service code · test results · edge cases identified.
 ```
@@ -35,7 +35,7 @@ Return: summary · service code · test results · edge cases identified.
 Implement REST API endpoints for user operations.
 Context: Data and business logic layers are complete from Subgoals 1-2.
 Deliverable: Express route handlers, middleware, request/response validation.
-Boundaries: Use service layer from Subgoal 2. Do not modify data layer.
+Boundaries: Use service layer from Subgoal 2. Do not modify data layer. Do not commit, push, open a pull request, deploy, add dependencies, or send messages.
 Verification: Integration tests hitting API endpoints with test database.
 Return: summary · route handlers · API tests · OpenAPI documentation.
 ```
@@ -45,7 +45,7 @@ Return: summary · route handlers · API tests · OpenAPI documentation.
 Integrate all layers and run end-to-end tests.
 Context: All three layers are complete from Subgoals 1-3.
 Deliverable: E2E test suite, API documentation, deployment configuration.
-Boundaries: Do not add new features. Focus on integration and testing.
+Boundaries: Do not add new features. Focus on integration and testing. Do not commit, push, open a pull request, deploy, add dependencies, or send messages.
 Verification: Run full test suite and manual API testing.
 Return: summary · integration test results · documentation · deployment readiness.
 ```

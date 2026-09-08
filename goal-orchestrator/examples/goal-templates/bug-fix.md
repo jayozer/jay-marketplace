@@ -35,8 +35,11 @@ Constraints:
 - Make minimal changes and do not modify unrelated code.
 
 Verification:
-- `[VERIFICATION COMMAND]` exits 0.
-- The final diff contains no unrelated changes.
+- `[VERIFICATION COMMAND]` exits 0; show the command's output.
+- The final diff contains no unrelated changes; show `git diff --stat`.
+
+If blocked:
+- Report what was tried and what would unblock progress, then stop.
 ```
 
 ## Example Goal Condition
@@ -52,8 +55,11 @@ Constraints:
 - Make minimal changes and do not modify unrelated modules.
 
 Verification:
-- `pytest -q tests/test_image_processing.py` exits 0.
-- The original reproduction and final diff are reviewed.
+- `pytest -q tests/test_image_processing.py` exits 0; show the passing test count.
+- The original reproduction and final diff are reviewed; show the reproduction output and `git diff --stat`.
+
+If blocked:
+- If the leak persists after two profiling passes, report the profiler output and ask before upgrading the image library.
 ```
 
 ## Verification Methods
