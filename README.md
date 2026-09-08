@@ -3,6 +3,8 @@
 A Claude Code **plugin marketplace** of installable AI-agent skill kits. Add the
 marketplace once, then pick which kits to install — globally or per-repo.
 
+**Supported hosts:** Claude Code and Codex.
+
 ## Projects (plugins)
 
 | Plugin | What it is for | Skills | Start here |
@@ -90,11 +92,11 @@ the skill's `SKILL.md`), which Claude Code resolves correctly for **personal,
 project, and plugin** installs — so the **same SKILL.md works under both the
 marketplace install and this manual copy** with no edits.
 
-For Codex, copy a skill folder into `$CODEX_HOME/skills` (normally
-`~/.codex/skills`) or into a repo-scoped `.agents/skills` directory. Codex also
-discovers user-level skills under `~/.agents/skills`. Confirm installation with
-the Skills UI, `/skills`, or a `$skill-name` mention; restart only if an update
-does not appear automatically.
+For Codex, copy a skill folder into `~/.agents/skills` for a personal install.
+`$CODEX_HOME/skills` (normally `~/.codex/skills`) is also supported. For a
+repo-scoped install, use a `.agents/skills` directory in the project. Confirm
+installation with the Skills UI, `/skills`, or a `$skill-name` mention; restart
+only if an update does not appear automatically.
 
 ## How the repo is organized
 
