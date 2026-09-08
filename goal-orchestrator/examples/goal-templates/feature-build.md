@@ -36,8 +36,11 @@ Constraints:
 - Follow existing architecture and code style.
 
 Verification:
-- `[VERIFICATION COMMAND]` exits 0.
-- The requested behavior and final diff are reviewed directly.
+- `[VERIFICATION COMMAND]` exits 0; show the command's output.
+- The requested behavior and final diff are reviewed directly; show the behavior demonstration and `git diff --stat`.
+
+If blocked:
+- Report what was tried and what would unblock progress, then stop.
 ```
 
 ## Example Goal Condition
@@ -54,8 +57,11 @@ Constraints:
 - Follow existing Express.js middleware patterns.
 
 Verification:
-- `npm test` exits 0 with all authentication tests passing.
-- The API behavior and final diff are reviewed directly.
+- `npm test` exits 0 with all authentication tests passing; show the test summary line.
+- The API behavior and final diff are reviewed directly; show the API response and `git diff --stat`.
+
+If blocked:
+- If session management conflicts with the existing user model, report the conflict and ask before changing the schema.
 ```
 
 ## Verification Methods

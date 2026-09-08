@@ -4,6 +4,8 @@
 
 > Native Codex `/goal` is the persistence and execution engine. `$goal-orchestrator` is the planner and project manager that prepares work for that engine.
 
+Supported hosts: Codex and Claude Code.
+
 ## What Goal Orchestrator Does
 
 Use Goal Orchestrator when a request needs more structure before long-running execution. It helps Codex:
@@ -42,8 +44,8 @@ Constraints:
 - Do not add dependencies, commit, push, or deploy.
 
 Verification:
-- Run the focused authentication tests and the full test suite.
-- Review the final diff for unrelated changes.
+- Run the focused authentication tests and the full test suite; show each summary line.
+- Review the final diff for unrelated changes; show `git diff --stat`.
 ```
 
 ### Use `$goal-orchestrator`
@@ -66,7 +68,7 @@ That launches in the current task by default. To route the run elsewhere, reques
 Use $goal-orchestrator to launch this as a new Codex task.
 ```
 
-For Git projects, the new task starts in a Codex worktree by default. A requested branch/ref or the current working tree is used only when you name that starting state. The parent task keeps any existing Goal, and the new task creates and verifies its own Goal.
+For Git projects, the new task starts in a Codex worktree by default. A requested branch/ref or the current working tree is used only when you name that starting state. A new branch is created only when you ask for that exact name. The parent task keeps any existing Goal, and the new task creates and verifies its own Goal.
 
 Selecting the skill by itself uses **draft mode**. It does not create a goal, edit files, or spawn subagents.
 
@@ -84,10 +86,13 @@ Constraints:
 - <scope, compatibility, approval, or non-goal boundary>
 
 Verification:
-- <command, observation, or review criterion proving completion>
+- <command and the printed output that proves it, or the observation or review evidence to show>
+
+If blocked:
+- <report what was tried and what would unblock progress, then stop>
 ```
 
-The goal body must be no more than 4,000 characters. Put background detail in the preceding brief or a referenced file. A textual turn cap is not required. Supply a native token budget only when the user explicitly asks for one.
+The goal body must be no more than 4,000 characters. Put background detail in the preceding brief or a referenced file. Each verification bullet names the output that proves it, because the native checker judges only what the conversation shows. In Codex a textual turn cap is not required; supply a native token budget only when the user explicitly asks for one. In Claude Code, offer an optional `or stop after N turns` clause, and treat a stop at the cap as unsuccessful, not complete.
 
 ## Codex Goal Lifecycle
 
@@ -98,6 +103,8 @@ The goal body must be no more than 4,000 characters. Put background detail in th
 - One unfinished native goal can be active in a task at a time.
 
 An active Goal blocks another Goal in the same task, not a Goal in a separate task. Goal mode keeps the task's existing sandbox and approval policy. It can still pause for user input, approval, or missing authority. Completing a goal requires real verification; passing tests alone is insufficient when they do not prove the requested behavior.
+
+Verified against Codex 0.151.0 and Claude Code 2.1.263 on 2026-09-07; re-check after upgrading.
 
 ## Delegation Rules
 
@@ -116,10 +123,17 @@ Avoid multiple agents writing to the same checkout. Prefer one implementation ow
 - `scripts/benchmark_goals.py` — check goal structure, verification, and character limits.
 - `scripts/validate_skills.py` — validate skill metadata and required sections.
 - `GUIDE.md` — detailed authoring, lifecycle, delegation, and troubleshooting guidance.
+- `evals/` — behavioral acceptance cases for `claude plugin eval` (early access); see `evals/README.md`.
 
 ## Install for Codex
 
-Codex discovers personal skills from its configured skills directory. This checkout is currently compatible with `$CODEX_HOME/skills` (normally `~/.codex/skills`):
+Codex discovers personal skills under `~/.agents/skills`:
+
+```bash
+mkdir -p ~/.agents/skills && cp -R skills/goal-orchestrator ~/.agents/skills/
+```
+
+`$CODEX_HOME/skills` (normally `~/.codex/skills`) is a supported alternative that Codex's own skill installer still uses:
 
 ```bash
 mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
@@ -133,13 +147,13 @@ mkdir -p /path/to/repo/.agents/skills
 cp -R skills/goal-orchestrator /path/to/repo/.agents/skills/
 ```
 
-Current Codex releases also discover user-level skills under `~/.agents/skills`. Use the Skills UI, `/skills`, or a `$goal-orchestrator` mention to confirm discovery. Codex normally detects skill changes automatically; restart it if an update does not appear.
+Use the Skills UI, `/skills`, or a `$goal-orchestrator` mention to confirm discovery. Codex normally detects skill changes automatically; restart it if an update does not appear.
 
 ## Claude Code Compatibility
 
-The skill retains a small Claude Code compatibility layer for the shared brief, safety, delegation, and verification workflow. Use current Claude Code documentation for its native goal and agent controls; do not project Codex lifecycle details onto Claude Code.
+The skill retains a small Claude Code compatibility layer for the shared brief, safety, delegation, and verification workflow. In Claude Code the model cannot create a goal: `/goal <condition>` is a user command, so a run is a handover of the exact `/goal` text, and the checker judges only what the conversation shows. Use current Claude Code documentation for its native goal and agent controls; do not project Codex lifecycle details onto Claude Code.
 
-Manual Claude Code installation remains:
+Invoke it as `/goal-orchestrator:goal-orchestrator` after a marketplace install, or `/goal-orchestrator` after the manual copy below:
 
 ```bash
 mkdir -p ~/.claude/skills
@@ -167,15 +181,15 @@ Benchmark goals without running their verification commands:
 python3 scripts/benchmark_goals.py examples/goal-templates
 ```
 
-Running extracted commands is opt-in and executes shell content from the input:
+Running extracted commands is opt-in and executes shell content from the input. `--test-commands` alone prints the extracted command list and runs nothing; add `--yes` to execute. `--timeout SECONDS` (default 30) bounds each command, and `--strict` turns unresolved placeholders such as `[TEST COMMAND]`, `<command>`, `{name}`, or `$NAME` in the verification and completion criteria into issues:
 
 ```bash
-python3 scripts/benchmark_goals.py goal.md --test-commands --cwd /path/to/project
+python3 scripts/benchmark_goals.py goal.md --test-commands --yes --cwd /path/to/project
 ```
 
 ## Validate Goal Orchestrator
 
-From `goal-orchestrator/`:
+Requires Python 3.10 or newer. From `goal-orchestrator/`:
 
 ```bash
 pip install -r requirements-dev.txt
@@ -183,5 +197,7 @@ python3 scripts/validate_skills.py
 python3 scripts/validate_skills.py --check-content
 bash scripts/smoke_test.sh
 ```
+
+On Homebrew Python, `pip install -r requirements-dev.txt` fails with a PEP 668 externally-managed error; use a virtual environment instead. When PyYAML is missing, `smoke_test.sh` falls back to `uv run --with pyyaml` automatically (`uv` must be on PATH). `scripts/` and `examples/` are plugin-level authoring and verification tools; the skill directory ships only `SKILL.md` and `agents/openai.yaml`.
 
 See [GUIDE.md](GUIDE.md) for detailed goal authoring, approval boundaries, delegation patterns, and troubleshooting.

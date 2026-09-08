@@ -36,8 +36,11 @@ Constraints:
 - Use existing test patterns and mock external dependencies.
 
 Verification:
-- `[COVERAGE COMMAND]` shows [TARGET]% coverage.
-- `[TEST COMMAND]` exits 0.
+- `[COVERAGE COMMAND]` shows [TARGET]% coverage; show the coverage total.
+- `[TEST COMMAND]` exits 0; show the test summary line.
+
+If blocked:
+- Report what was tried and what would unblock progress, then stop.
 ```
 
 ## Example Goal Condition
@@ -54,8 +57,11 @@ Constraints:
 - Use existing Jest patterns and mock the database and external APIs.
 
 Verification:
-- `npm run coverage` shows at least 80% coverage.
-- `npm test` exits 0.
+- `npm run coverage` shows at least 80% coverage; show the coverage total.
+- `npm test` exits 0; show the test summary line.
+
+If blocked:
+- If coverage cannot reach 80% without weakening assertions, report the gap and ask whether to lower the target.
 ```
 
 ## Verification Methods

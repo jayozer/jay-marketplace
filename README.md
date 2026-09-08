@@ -3,6 +3,8 @@
 A Claude Code **plugin marketplace** of installable AI-agent skill kits. Add the
 marketplace once, then pick which kits to install — globally or per-repo.
 
+**Supported hosts:** Claude Code and Codex.
+
 ## Projects (plugins)
 
 | Plugin | What it is for | Skills | Start here |
@@ -67,9 +69,14 @@ installations should replace the old marketplace package explicitly:
 /plugin install goal-orchestrator@jay-marketplace
 ```
 
-The skill invocation remains `$goal-orchestrator`; only the marketplace package
-name changed. For a Project-scope installation, reinstall at that scope and
-commit the resulting `.claude/settings.json` update.
+Invocation depends on the host. In Codex the mention is unchanged:
+`$goal-orchestrator`. In Claude Code, plugin skills are namespaced by plugin
+name, so the marketplace command changed from
+`/agent-workflow-kit:goal-orchestrator` to `/goal-orchestrator:goal-orchestrator`
+(the bare `/goal-orchestrator` also works when no other command uses that name).
+A manual copy into `~/.claude/skills/` is `/goal-orchestrator`. For a
+Project-scope installation, reinstall at that scope and commit the resulting
+`.claude/settings.json` update.
 
 ## Manual install (no marketplace)
 
@@ -85,11 +92,11 @@ the skill's `SKILL.md`), which Claude Code resolves correctly for **personal,
 project, and plugin** installs — so the **same SKILL.md works under both the
 marketplace install and this manual copy** with no edits.
 
-For Codex, copy a skill folder into `$CODEX_HOME/skills` (normally
-`~/.codex/skills`) or into a repo-scoped `.agents/skills` directory. Codex also
-discovers user-level skills under `~/.agents/skills`. Confirm installation with
-the Skills UI, `/skills`, or a `$skill-name` mention; restart only if an update
-does not appear automatically.
+For Codex, copy a skill folder into `~/.agents/skills` for a personal install.
+`$CODEX_HOME/skills` (normally `~/.codex/skills`) is also supported. For a
+repo-scoped install, use a `.agents/skills` directory in the project. Confirm
+installation with the Skills UI, `/skills`, or a `$skill-name` mention; restart
+only if an update does not appear automatically.
 
 ## How the repo is organized
 
@@ -119,3 +126,5 @@ for validating skill frontmatter locally.
 claude plugin validate .                       # marketplace.json
 claude plugin validate ./goal-orchestrator     # an individual plugin
 ```
+
+`.github/workflows/ci.yml` runs the unit tests, content validation, smoke suite, and manifest validation on every push and pull request.

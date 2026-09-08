@@ -1,0 +1,19 @@
+import sys
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from calc import add  # noqa: E402
+
+
+class CalcTests(unittest.TestCase):
+    def test_add_zero_and_zero(self):
+        assert add(0, 0) == 0
+
+    def test_add_two_and_three(self):
+        assert add(2, 3) == 5
+
+
+if __name__ == "__main__":
+    unittest.main()

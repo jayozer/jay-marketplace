@@ -36,9 +36,12 @@ Constraints:
 - Keep changes inside [MODULE].
 
 Verification:
-- `[TEST SUITE]` exits 0 and `[LINTER]` passes.
-- `[PERFORMANCE BENCHMARK]` shows no regression.
-- The final diff is reviewed for behavior changes.
+- `[TEST SUITE]` exits 0 and `[LINTER]` passes; show the test summary line and the lint output.
+- `[PERFORMANCE BENCHMARK]` shows no regression; show the benchmark output.
+- The final diff is reviewed for behavior changes; show `git diff --stat`.
+
+If blocked:
+- Report what was tried and what would unblock progress, then stop.
 ```
 
 ## Example Goal Condition
@@ -54,9 +57,12 @@ Constraints:
 - Do not change payment API contracts or unrelated modules.
 
 Verification:
-- `pytest -q` exits 0 and `ruff check .` passes.
-- The performance benchmark shows no regression.
-- The final diff is reviewed for behavior changes.
+- `pytest -q` exits 0 and `ruff check .` passes; show the test summary line and the lint output.
+- The performance benchmark shows no regression; show the benchmark output.
+- The final diff is reviewed for behavior changes; show `git diff --stat`.
+
+If blocked:
+- If a behavior change appears necessary to simplify the code, report it and ask before proceeding.
 ```
 
 ## Verification Methods
@@ -127,7 +133,7 @@ If the goal loops without progress:
 1. Verify test coverage is adequate for the changes
 2. Check if refactoring scope is too large
 3. Break into supervised orchestration with smaller changes
-4. Run `/goal clear` and restart with more focused scope
+4. Ask the user to edit, pause, or clear the goal before restarting with more focused scope
 5. Consider reverting and trying a different approach
 
 ## Refactoring Principles

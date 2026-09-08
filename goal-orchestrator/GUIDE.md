@@ -97,12 +97,17 @@ Constraints:
 - <scope, compatibility, approval, or non-goal boundary>
 
 Verification:
-- `<focused command>` exits 0.
-- `<broader command>` exits 0.
-- The final diff contains no unrelated changes.
+- `<focused command>` exits 0; show its summary line.
+- `<broader command>` exits 0; show its summary line.
+- The final diff contains no unrelated changes; show `git diff --stat`.
+
+If blocked:
+- <report what was tried and what would unblock progress, then stop>
 ```
 
 The goal body becomes the execution prompt and completion criteria. Keep it at or below 4,000 characters. Move background detail into the brief or a referenced file.
+
+Each verification bullet names the output that proves it. The native checker judges only what the conversation shows, so a claim that a command passed, without its output, is not evidence.
 
 ### Good objective
 
@@ -129,7 +134,7 @@ Verification:
 
 ### Budgets
 
-Do not insert a conventional turn limit into every goal. When the runtime exposes a native token budget, pass it only when the user explicitly requests one. A budget limits a run; it does not define successful completion.
+In Codex, do not insert a conventional turn limit into every goal; pass the native token budget only when the user explicitly requests one. In Claude Code, an `or stop after N turns` clause is the only bound available, so offer it. A budget or cap limits a run; reaching it is an unsuccessful stop, not completion.
 
 ## Launch and Lifecycle
 
@@ -140,6 +145,8 @@ Before an explicit launch:
 3. Inspect the relevant goal state and preserve unfinished work.
 4. Confirm the workspace, dirty tree, verification commands, and approval points.
 5. Start the goal without changing sandbox or approval settings.
+
+After launch or handover, report a launch record: the runtime (Codex or Claude Code), the workspace (repository path, branch, and commit), the destination (current task, new task with its real `threadId`, or handover of the `/goal` text), the goal state (the result of the last `get_goal`, or "not launched: handed over"), and the budget (the requested `token_budget` or turn clause, or "none").
 
 ### Launch in the current task
 
@@ -152,7 +159,7 @@ Use this route only when the user explicitly asks for a new, separate, parallel,
 1. Do not call `create_goal` in the parent task.
 2. Discover the matching saved project with `list_projects` before calling `create_thread`.
 3. If the saved project is a Git repository, create a Codex worktree by default. Use the saved project directly only for a non-Git project or when the user explicitly requests it.
-4. Omit worktree `startingState` unless the user explicitly asks to start from a particular existing branch/ref or include the current working tree.
+4. Omit worktree `startingState` unless the user explicitly asks to start from a particular existing branch/ref, include the current working tree, or create a new branch with the exact name they gave via `onMissing: "create-branch"`. Never invent a branch name.
 5. Send the complete brief and Goal text in the new task's prompt, plus this guard:
 
    ```text
@@ -175,6 +182,8 @@ Codex provides these user controls:
 - `/goal clear` — remove it.
 
 The agent should not silently invoke those lifecycle controls. New authority, irreversible actions, or material product decisions still require the user.
+
+Runtime rules above were verified against Codex 0.151.0 and Claude Code 2.1.263 on 2026-09-07. The Codex three-turn blocked rule and the `create_goal` budget rule come from the CLI's embedded tool contract, not public documentation; re-check them after upgrading either host.
 
 ## Delegate Independent Work
 
@@ -248,4 +257,6 @@ Use supervised planning or execution with explicit approval points. A persistent
 
 ## Claude Code Compatibility
 
-The brief, goal-shaped gate, explicit launch rule, safety boundaries, selective delegation, and final verification are portable. Claude Code goal commands, checker behavior, permissions, and agent tools can change independently, so translate those controls from current Claude Code documentation instead of copying Codex-specific lifecycle rules.
+The brief, goal-shaped gate, explicit launch rule, safety boundaries, selective delegation, and final verification are portable. Claude Code exposes no goal tool to the model: `/goal <condition>` is a user command, so a run there is a handover of the exact `/goal` text (for a headless run, write it to a file and pass `claude -p "$(cat goal.md)"`; never inline it in double quotes, because the shell would execute its backticked commands first), and the checker judges only what the conversation shows. Invoke the skill as `/goal-orchestrator:goal-orchestrator` from a marketplace install or `/goal-orchestrator` from a manual copy. Claude Code goal commands, checker behavior, permissions, and agent tools can change independently, so translate those controls from current Claude Code documentation instead of copying Codex-specific lifecycle rules.
+
+A goal does not change permission mode, so a walk-away run needs auto mode or pre-allowed verification and edit commands; Manual mode stalls at the first prompt. Wait for every subagent and background shell before ending a turn, because evaluation is skipped while they run. There is no blocked status: when a blocker persists, state it and what would unblock it in plain text, then stop. Unrecoverable errors such as expired credentials that Claude Code manages, exhausted credits, an uncompactable context, or an unavailable model clear the goal with a warning, so tell the user to re-run `/goal`; resuming a session restores an active goal but resets its turn count, timer, and token-spend baseline as shown by `/goal`, and a textual turn clause is still judged from the conversation.

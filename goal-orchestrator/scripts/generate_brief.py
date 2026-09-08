@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Auto-generate a brief from project context (README, package.json, etc.)."""
+"""Generate a draft brief scaffold from README.md, package.json, and pyproject.toml.
+
+This is a draft scaffold, not a finished brief. It reads
+README.md, package.json, and pyproject.toml only, and it
+does not inspect git state, AGENTS.md, or verification scripts.
+Every bracketed placeholder still needs task-specific detail before the
+brief is execution-ready. README.md values take precedence: a name or
+description it provides is never overwritten by package.json or
+pyproject.toml.
+"""
 
 from __future__ import annotations
 
@@ -139,13 +148,17 @@ def extract_from_pyproject(pyproject_path: Path) -> dict[str, Any]:
 
 
 def _merge_info(target: dict[str, Any], source: dict[str, Any]) -> None:
-    """Merge extractor output; tech stacks are unioned, other fields overridden."""
+    """Merge extractor output; tech stacks are unioned, other fields first-wins.
+
+    Sources are merged in README.md, package.json, pyproject.toml order, so a
+    non-empty name or description that README.md already provided is kept.
+    """
     for key, value in source.items():
         if key == "tech_stack":
             merged = target.get("tech_stack", [])
             merged += [item for item in value if item not in merged]
             target["tech_stack"] = merged
-        else:
+        elif not target.get(key):
             target[key] = value
 
 
@@ -218,7 +231,12 @@ Relevant current behavior, files, sources, or environment details:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Generate a brief from project context"
+        description=(
+            "Generate a draft scaffold of a brief from README.md, package.json, "
+            "and pyproject.toml only; it does not inspect git state, AGENTS.md, "
+            "or verification scripts, so bracketed placeholders still need "
+            "task-specific detail."
+        )
     )
     parser.add_argument(
         "project_dir",

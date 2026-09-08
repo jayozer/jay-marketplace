@@ -212,6 +212,24 @@ class GoalOrchestratorLaunchRoutingTests(unittest.TestCase):
         self.assertIn("Return a copy-ready new-task prompt", self.skill)
         self.assertIn("Never change destinations silently", self.guide)
 
+    def test_claude_code_launch_is_a_handover(self) -> None:
+        for phrase in (
+            "Launch is a handover, never an action",
+            "Never report a goal as created, active, or launched",
+            "or stop after N turns",
+            "Permission mode is unchanged by a goal",
+        ):
+            self.assertIn(phrase, self.skill)
+
+    def test_launch_record_and_run_ending_facts_are_documented(self) -> None:
+        for phrase in (
+            "report a launch record",
+            "Goal state:",
+            "A run can end without a verdict",
+            "resets its turn count",
+        ):
+            self.assertIn(phrase, self.skill)
+
 
 if __name__ == "__main__":
     unittest.main()

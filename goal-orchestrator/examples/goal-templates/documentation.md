@@ -35,8 +35,11 @@ Constraints:
 - Follow the existing documentation style and formatting.
 
 Verification:
-- `[LINTING/VALIDATION COMMAND]` exits 0.
-- The review checklist is complete.
+- `[LINTING/VALIDATION COMMAND]` exits 0; show the linter output.
+- The review checklist is complete; show the completed checklist.
+
+If blocked:
+- Report what was tried and what would unblock progress, then stop.
 ```
 
 ## Example Goal Condition
@@ -52,8 +55,11 @@ Constraints:
 - Follow the existing API documentation style and OpenAPI 3.0 formatting.
 
 Verification:
-- `spectral lint openapi.yaml` exits 0.
-- The endpoint review checklist is complete.
+- `spectral lint openapi.yaml` exits 0; show the lint output.
+- The endpoint review checklist is complete; show the completed checklist.
+
+If blocked:
+- If an endpoint's behavior cannot be confirmed from the code, report which endpoint and ask the API owner before documenting it.
 ```
 
 ## Verification Methods

@@ -15,7 +15,7 @@ Split work by independent features, with each subagent handling one complete fea
 Implement sales overview dashboard with charts and metrics.
 Context: Building e-commerce admin dashboard. This is one of several dashboard features.
 Deliverable: Sales overview component, API endpoints for sales data, chart integration.
-Boundaries: Do not touch other dashboard features (inventory, customers, etc.). Focus only on sales.
+Boundaries: Do not touch other dashboard features (inventory, customers, etc.). Focus only on sales. Do not commit, push, open a pull request, deploy, add dependencies, or send messages.
 Verification: Component renders correctly, API returns correct sales data, charts display properly.
 Return: summary · component code · API endpoints · test results · performance metrics.
 ```
@@ -25,7 +25,7 @@ Return: summary · component code · API endpoints · test results · performanc
 Implement inventory management interface with stock tracking.
 Context: Building e-commerce admin dashboard. This is independent of sales overview.
 Deliverable: Inventory list component, stock update endpoints, low-stock alerts.
-Boundaries: Do not touch sales or customer features. Focus only on inventory.
+Boundaries: Do not touch sales or customer features. Focus only on inventory. Do not commit, push, open a pull request, deploy, add dependencies, or send messages.
 Verification: Inventory updates work correctly, alerts trigger at thresholds, UI is responsive.
 Return: summary · component code · API endpoints · test results · alert configuration.
 ```
@@ -35,7 +35,7 @@ Return: summary · component code · API endpoints · test results · alert conf
 Implement customer management interface with search and filtering.
 Context: Building e-commerce admin dashboard. This is independent of other features.
 Deliverable: Customer list component, search/filter logic, customer detail view.
-Boundaries: Do not touch sales or inventory features. Focus only on customers.
+Boundaries: Do not touch sales or inventory features. Focus only on customers. Do not commit, push, open a pull request, deploy, add dependencies, or send messages.
 Verification: Search returns correct results, filters work, customer details load properly.
 Return: summary · component code · search logic · test results · performance metrics.
 ```
@@ -45,7 +45,7 @@ Return: summary · component code · search logic · test results · performance
 Integrate all dashboard features into main layout with navigation.
 Context: All three features are complete from Subgoals 1-3.
 Deliverable: Main dashboard layout, navigation menu, responsive design.
-Boundaries: Do not modify feature implementations. Focus on layout and navigation.
+Boundaries: Do not modify feature implementations. Focus on layout and navigation. Do not commit, push, open a pull request, deploy, add dependencies, or send messages.
 Verification: All features accessible via navigation, layout works on all screen sizes.
 Return: summary · layout code · navigation implementation · responsive test results.
 ```

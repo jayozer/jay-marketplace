@@ -15,7 +15,7 @@ Split work into sequential test-writing and implementation phases. Keep later im
 Write comprehensive test suite for payment processing service.
 Context: Building payment service. Need to ensure all edge cases are covered before implementation.
 Deliverable: Test suite with unit tests, integration tests, and edge case scenarios.
-Boundaries: Do not implement any payment logic; minimal interface stubs are allowed so the tests import and run.
+Boundaries: Do not implement any payment logic; minimal interface stubs are allowed so the tests import and run. Do not commit, push, open a pull request, deploy, add dependencies, or send messages.
 Verification: Test suite runs and every test fails against the stubbed service — show the failing run output.
 Return: summary · test suite · scenarios covered · edge cases identified · acceptance criteria.
 ```
@@ -25,7 +25,7 @@ Return: summary · test suite · scenarios covered · edge cases identified · a
 Implement payment processing logic to pass the test suite.
 Context: Test suite is complete from Subgoal 1. All requirements are specified in tests.
 Deliverable: Payment service implementation that passes all tests.
-Boundaries: Follow test specifications exactly. Do not add untested features.
+Boundaries: Follow test specifications exactly. Do not add untested features. Do not commit, push, open a pull request, deploy, add dependencies, or send messages.
 Verification: All tests from Subgoal 1 pass. No test failures.
 Return: summary · implementation code · test results · any test modifications needed.
 ```
@@ -35,7 +35,7 @@ Return: summary · implementation code · test results · any test modifications
 Implement error handling and edge case scenarios from test suite.
 Context: Core implementation passes happy path tests. Need to handle errors and edge cases.
 Deliverable: Error handling logic, retry mechanisms, graceful degradation.
-Boundaries: Do not modify core payment logic. Focus only on error paths.
+Boundaries: Do not modify core payment logic. Focus only on error paths. Do not commit, push, open a pull request, deploy, add dependencies, or send messages.
 Verification: All error case tests pass. Edge cases handled correctly.
 Return: summary · error handling code · test results · error scenarios documented.
 ```
@@ -45,7 +45,7 @@ Return: summary · error handling code · test results · error scenarios docume
 Integrate payment service with external payment gateway and document usage.
 Context: All tests pass from Subgoals 1-3. Service is functionally complete.
 Deliverable: Gateway integration, API documentation, usage examples.
-Boundaries: Do not modify payment logic. Focus on integration and docs.
+Boundaries: Do not modify payment logic. Focus on integration and docs. Do not commit, push, open a pull request, deploy, add dependencies, or send messages.
 Verification: Integration tests with mock gateway pass. Documentation is complete.
 Return: summary · integration code · documentation · integration test results · deployment notes.
 ```

@@ -24,8 +24,8 @@ Jay Marketplace is a Claude Code plugin marketplace that provides installable AI
           │               │               │
           ▼               ▼               ▼
 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│agent-workflow-  │ │yt-automation-   │ │video-understand-│
-│     kit        │ │     kit         │ │    ing-kit      │
+│goal-orchestrator│ │yt-automation-   │ │video-understand-│
+│                 │ │     kit         │ │    ing-kit      │
 └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
          │                   │                   │
          │                   │                   │
@@ -63,40 +63,15 @@ Each plugin (kit) follows this structure:
 
 ### 1. Goal Orchestrator (`goal-orchestrator`)
 
-**Purpose:** Turn broad tasks into verifiable `/goal` commands for autonomous execution
+**Purpose:** Turn a broad request into an execution-ready brief and a measurable native goal, launched only on explicit request and verified to completion.
 
-**Workflow:**
-```
-User Request → Fill Brief → Is /goal-shaped? → Write Completion Condition
-                                              │
-                                              ├── Yes → Launch /goal → Autonomous Loop
-                                              │                │
-                                              │                └── Checker Model (Haiku)
-                                              │                    │
-                                              │                    └── Met/Not-Met → Continue/Stop
-                                              │
-                                              └── No → Supervised Orchestration
-                                                        │
-                                                        └── Parallel Subagents (Task tool)
-```
+**Goal block:** Four sections — Done when, Constraints, Verification, If blocked — drafted by default and launched only when the user explicitly asks.
 
-**Key Components:**
-- **Brief Template:** Universal form for capturing task requirements
-- **Completion Condition:** 4-part structure (measurable end state, verification method, constraints, hard cap)
-- **Guardrails:** Trusted workspace, auto-approve tools, fence danger, turn cap
-- **Fallback:** Supervised multi-agent orchestration with parallel subagents
+**Execution:** Codex drives the native `create_goal`/`get_goal`/`update_goal` tools directly; Claude Code hands the user a copy-ready `/goal` command to run themselves. Sandbox and approval policy are unchanged on either host.
 
-**Enhanced Features:**
-- **Example Templates:** Pre-built goal templates (feature-build, bug-fix, test-suite, documentation, refactor)
-- **Brief Templates:** Domain-specific templates (web-development, api-development, data-pipeline, ML)
-- **Subgoal Patterns:** Common decomposition patterns (layered-architecture, feature-by-feature, test-driven, research-then-build)
-- **Helper Scripts:** `extract_goal.py`, `benchmark_goals.py`, `generate_brief.py`
-- **Enhanced Validation:** Content structure validation, broken link detection, required sections checking
-- **Deep Documentation:** `GUIDE.md` with goal writing patterns, troubleshooting, token optimization
+**Helper scripts and examples:** `extract_goal.py`, `benchmark_goals.py`, `generate_brief.py`, and `goal_parsing.py`, plus the example templates, live at the plugin level, not inside the skill directory.
 
-**Platform Adaptation:**
-- Claude Code: Uses `Task`/Agent tool, `TodoWrite`, `Skill` tool, native `/goal` command
-- Codex: Uses `spawn_agent`/`wait_agent`, `update_plan`, native skill loading, supervised orchestration only
+See `goal-orchestrator/README.md` and `goal-orchestrator/GUIDE.md` for the operational rules.
 
 ### 2. Video Understanding (video-understanding-kit)
 
@@ -462,7 +437,8 @@ Step 5: /repurpose
 Plugins can be installed at three scopes:
 
 1. **User scope:** Available in every project on the machine (good for general tools like goal-orchestrator)
-   - Location: `~/.claude/skills/`
+   - Marketplace installs are cached under `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`
+   - `~/.claude/skills/` is the manual-copy location only, not where a marketplace install lands
    
 2. **Project scope:** Recorded in repo's `.claude/settings.json`, committed to git
    - Teammates prompted to install when they trust the workspace
@@ -496,14 +472,14 @@ Plugins can be installed at three scopes:
 - Enables incremental workflows and iteration
 
 ### 5. Platform Adaptation
-- Skills written for Claude Code can adapt to Codex
-- Tool name translation table in skill docs
-- Harness-specific behavior branches
+- Skills are Codex-first, with a Claude Code compatibility section in SKILL.md
+- Runtime-specific goal and agent controls are translated per host
+- No tool-name mapping table exists; runtime-specific controls are translated per host in SKILL.md
 
 ## Dependencies
 
 ### Python Dependencies
-- **goal-orchestrator:** None (pure orchestration)
+- **goal-orchestrator:** `PyYAML` (`requirements-dev.txt`), needed only by `validate_skills.py`; the helper scripts and tests use the standard library only. Requires Python 3.10 or newer.
 - **video-understanding-kit:** `google-genai` (Gemini API)
 - **yt-automation-kit:** `yt-dlp` (YouTube), Kie.ai SDK (thumbnails)
 
