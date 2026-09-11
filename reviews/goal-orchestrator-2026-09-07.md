@@ -2,6 +2,8 @@
 
 Reviewed September 7, 2026 (PDT), on branch `review` at `937c3e47bc68be57b35fd7ef96e8c05e72d7421a`.
 
+Implementation follow-up: [September 10 changes and validation](goal-orchestrator-2026-09-10-implementation.md). The findings below preserve the reviewed snapshot.
+
 ## Assessment
 
 Keep the Codex planning workflow. Its separation of drafting, explicit execution, bounded scope, and evidence-based completion is sound. The current package needs fixes to its verification helpers and documentation before their results should be used as an execution or completion gate. Claude Code compatibility is an outline; Kimi Code compatibility has not been implemented in the skill.

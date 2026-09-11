@@ -112,6 +112,17 @@ If blocked:
 
 
 class DiagnosticsTests(unittest.TestCase):
+    def test_indented_continuation_after_blank_is_not_silently_lost(self) -> None:
+        text = '/goal Check both cases.\nDone when:\n- The behavior is correct.\nVerification:\n- Review the output.\n\n  Also inspect the second artifact.\n'
+        [goal] = extract_goals_from_text(text)
+        self.assertIn('line 7', goal['diagnostics'][0])
+        self.assertEqual(goal['source_excerpt'], text)
+
+    def test_command_record_cannot_be_normalized_across_lines(self) -> None:
+        text = '/goal Check output.\nDone when:\n- The command passes.\nVerification:\n- Command: {"command":"printf one\ntwo", "cwd":"."}\n'
+        [goal] = extract_goals_from_text(text)
+        self.assertIn('Command record must occupy one line', goal['diagnostics'][0])
+
     def test_unrecognized_line_in_open_section_is_diagnosed_not_silent(self) -> None:
         text = """/goal Fix it.
 
@@ -279,7 +290,7 @@ Verification:
         self.assertEqual(goal["done_when"], ["Expired tokens are rejected"])
         self.assertEqual(goal["diagnostics"], [])
 
-    def test_wrapped_objective_without_a_following_heading_is_diagnosed(self) -> None:
+    def test_wrapped_objective_before_a_blank_then_heading_is_preserved(self) -> None:
         text = """/goal Fix the password-reset expiry bug that
 lets expired tokens through.
 
@@ -288,15 +299,33 @@ Done when:
 """
         [goal] = extract_goals_from_text(text)
 
-        # Diagnose, do not guess: the objective is left exactly as written.
-        self.assertEqual(goal["objective"], "Fix the password-reset expiry bug that")
-        self.assertEqual(
-            goal["diagnostics"],
-            ["Possible wrapped objective at line 2: 'lets expired tokens through.'"],
-        )
+        self.assertEqual(goal["objective"], "Fix the password-reset expiry bug that lets expired tokens through.")
+        self.assertEqual(goal["done_when"], ["Expired tokens are rejected"])
+        self.assertEqual(goal["diagnostics"], [])
+
+    def test_wrapped_objective_without_sections_has_a_location_diagnostic(self) -> None:
+        [goal] = extract_goals_from_text("/goal Fix the bug that\nlets expired tokens through.\n")
+        self.assertIn("line 2", goal["diagnostics"][0])
 
 
 class SourceSpanTests(unittest.TestCase):
+    def test_raw_goal_preserves_crlf_and_original_indentation(self) -> None:
+        text = '/goal Fix it.\r\n\r\nDone when:\r\n  - It works.\r\nVerification:\r\n- Command: {"command":"true","cwd":"."}\r\n'
+        [goal] = extract_goals_from_text(text)
+        self.assertEqual(goal["raw_goal"], text[len("/goal "):].rstrip("\r\n"))
+        self.assertEqual(goal["raw_character_count"], len(goal["raw_goal"]))
+
+    def test_rejected_source_is_retained_with_a_span(self) -> None:
+        text = '/goal Fix it.\nDone when:\nnot a bullet\nVerification:\n- Review the diff.\n'
+        [goal] = extract_goals_from_text(text)
+        self.assertTrue(goal["diagnostics"])
+        self.assertEqual(goal["source_excerpt"], text)
+        self.assertEqual(goal["source_excerpt_span"], {"start_line": 1, "end_line": 5})
+
+    def test_multisentence_objective_is_not_shortened(self) -> None:
+        [goal] = extract_goals_from_text('/goal Fix expiry. Preserve valid tokens.\nDone when:\n- Both cases pass.')
+        self.assertEqual(goal["objective"], 'Fix expiry. Preserve valid tokens.')
+
     def test_raw_character_count_includes_blank_lines_and_span_is_reported(self) -> None:
         body = """/goal Fix it.
 
@@ -314,6 +343,7 @@ Verification:
         # New field counts the raw lines from /goal through the last absorbed line,
         # blank lines included, without the "/goal " prefix and trailing prose.
         self.assertEqual(goal["raw_character_count"], len(body) - len("/goal "))
+        self.assertEqual(goal["raw_goal"], body[len("/goal "):])
         self.assertEqual(goal["raw_character_count"], goal["character_count"] + 2)
         self.assertEqual(goal["source_span"], {"start_line": 1, "end_line": 7})
 
@@ -326,6 +356,29 @@ Verification:
 
 
 class CollectGoalsTests(unittest.TestCase):
+    def test_long_literal_is_not_statted_as_a_filename(self) -> None:
+        text = "/goal " + "a" * 5000
+        goals, errors = collect_goals([text])
+        self.assertEqual(errors, [])
+        self.assertEqual(goals[0]["raw_goal"], "a" * 5000)
+
+    def test_kimi_lifecycle_forms_are_filtered_only_for_that_host(self) -> None:
+        commands = ["status", "replace New objective", "next Next objective", "next manage",
+                    "pause", "resume", "cancel"]
+        text = "\n".join("/goal " + command for command in commands)
+        self.assertEqual(extract_goals_from_text(text, runtime="kimi"), [])
+        goals = extract_goals_from_text("/goal status page is documented", runtime="codex")
+        self.assertEqual(goals[0]["objective"], "status page is documented")
+
+    def test_kimi_escaped_subcommand_and_capitalized_verb_are_objectives(self) -> None:
+        text = "/goal -- cancel stale work\n/goal Replace deprecated calls"
+        goals = extract_goals_from_text(text, runtime="kimi")
+        self.assertEqual([g["objective"] for g in goals], ["cancel stale work", "Replace deprecated calls"])
+
+    def test_claude_aliases_are_filtered(self) -> None:
+        text = "\n".join("/goal " + command for command in ["clear", "stop", "off", "reset", "none", "cancel"])
+        self.assertEqual(extract_goals_from_text(text, runtime="claude"), [])
+
     def test_mistyped_path_starting_with_goal_is_input_not_found(self) -> None:
         goals, errors = collect_goals(["/goal-orchestrator/nope"])
 
@@ -363,6 +416,11 @@ class CollectGoalsTests(unittest.TestCase):
 
 
 class ExtractGoalCliTests(unittest.TestCase):
+    def test_runtime_option_filters_kimi_management_commands(self) -> None:
+        result = self.run_cli("/goal next queued work", "--runtime", "kimi")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("No goals found", result.stderr)
+
     @staticmethod
     def run_cli(*args: str) -> subprocess.CompletedProcess[str]:
         env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
@@ -420,6 +478,18 @@ class ExtractGoalCliTests(unittest.TestCase):
         self.assertIn("**Character Count:**", result.stdout)
         self.assertIn("**Raw Character Count:**", result.stdout)
         self.assertIn("**If Blocked:**\n- Stop and report the failing step\n", result.stdout)
+
+    def test_markdown_diagnostics_preserve_the_rejected_tail_for_review(self) -> None:
+        text = "/goal Fix it.\nDone when:\nnot a bullet\nVerification:\n- Review `setup.sh`.\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rejected.md"
+            path.write_text(text, encoding="utf-8")
+            result = self.run_cli(str(path), "--format", "markdown")
+
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("including rejected text (lines 1-5)", result.stdout)
+        self.assertIn(text, result.stdout)
+        self.assertIn("**Diagnostics:**", result.stdout)
 
 
 if __name__ == "__main__":

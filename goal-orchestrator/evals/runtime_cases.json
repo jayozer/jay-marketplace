@@ -1,0 +1,643 @@
+[
+  {
+    "id": "current-launch",
+    "runtime": "codex",
+    "mode": "run",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run the already approved goal in this task. Preserve notes.txt; no commits or external actions.",
+    "tools": {
+      "get_goal": [
+        null,
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      ],
+      "create_goal": [
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      ],
+      "update_goal": [
+        {
+          "status": "complete"
+        }
+      ]
+    }
+  },
+  {
+    "id": "draft-only",
+    "runtime": "codex",
+    "mode": "draft",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Draft a goal for this outcome; do not start or implement it.",
+    "tools": {
+      "get_goal": [
+        null,
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      ],
+      "create_goal": [
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      ],
+      "update_goal": [
+        {
+          "status": "complete"
+        }
+      ]
+    }
+  },
+  {
+    "id": "plan-mode",
+    "runtime": "codex",
+    "mode": "plan",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run this goal now, but the host is currently in Plan mode.",
+    "tools": {
+      "get_goal": [
+        null,
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      ],
+      "create_goal": [
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      ],
+      "update_goal": [
+        {
+          "status": "complete"
+        }
+      ]
+    }
+  },
+  {
+    "id": "active-conflict",
+    "runtime": "codex",
+    "mode": "run",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run the already approved goal in this task. Preserve notes.txt; no commits or external actions.",
+    "tools": {
+      "get_goal": [
+        {
+          "status": "active",
+          "objective": "Finish the unrelated migration."
+        }
+      ],
+      "create_goal": [
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      ],
+      "update_goal": [
+        {
+          "status": "complete"
+        }
+      ]
+    }
+  },
+  {
+    "id": "tools-unavailable",
+    "runtime": "codex",
+    "mode": "run",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run the already approved goal in this task. Preserve notes.txt; no commits or external actions.",
+    "tools": {}
+  },
+  {
+    "id": "creation-failed",
+    "runtime": "codex",
+    "mode": "run",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run the already approved goal in this task. Preserve notes.txt; no commits or external actions.",
+    "tools": {
+      "get_goal": [
+        null
+      ],
+      "create_goal": [
+        {
+          "error": "creation unavailable"
+        }
+      ],
+      "update_goal": [
+        {
+          "status": "complete"
+        }
+      ]
+    }
+  },
+  {
+    "id": "activation-mismatch",
+    "runtime": "codex",
+    "mode": "run",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run the already approved goal in this task. Preserve notes.txt; no commits or external actions.",
+    "tools": {
+      "get_goal": [
+        null,
+        {
+          "status": "active",
+          "objective": "A different objective."
+        }
+      ],
+      "create_goal": [
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      ],
+      "update_goal": [
+        {
+          "status": "complete"
+        }
+      ]
+    }
+  },
+  {
+    "id": "budget-requested",
+    "runtime": "codex",
+    "mode": "run",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run the approved goal in this task with a native token budget of 12000.",
+    "tools": {
+      "get_goal": [
+        null,
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+          "token_budget": 12000
+        }
+      ],
+      "create_goal": [
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+          "token_budget": 12000
+        }
+      ],
+      "update_goal": [
+        {
+          "status": "complete",
+          "tokens_used": 42
+        }
+      ]
+    },
+    "requested_budget": 12000
+  },
+  {
+    "id": "new-task-pending",
+    "runtime": "codex",
+    "mode": "run",
+    "destination": "new",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run the approved goal in a new Codex task.",
+    "tools": {
+      "get_goal": [
+        {
+          "status": "active",
+          "objective": "Keep the parent goal."
+        }
+      ],
+      "list_projects": [
+        [
+          {
+            "id": "project-1",
+            "path": "/fixture/repo",
+            "isGitRepository": true
+          }
+        ]
+      ],
+      "create_thread": [
+        {
+          "clientThreadId": "pending-1"
+        }
+      ]
+    }
+  },
+  {
+    "id": "new-task-activated",
+    "runtime": "codex",
+    "mode": "run",
+    "destination": "new",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run the approved goal in a new Codex task.",
+    "tools": {
+      "get_goal": [
+        {
+          "status": "active",
+          "objective": "Keep the parent goal."
+        }
+      ],
+      "list_projects": [
+        [
+          {
+            "id": "project-1",
+            "path": "/fixture/repo",
+            "isGitRepository": true
+          }
+        ]
+      ],
+      "create_thread": [
+        {
+          "clientThreadId": "pending-1"
+        }
+      ],
+      "list_threads": [
+        [
+          {
+            "threadId": "child-1",
+            "clientThreadId": "pending-1",
+            "hostId": "local"
+          }
+        ]
+      ],
+      "read_thread": [
+        {
+          "threadId": "child-1",
+          "goal": {
+            "status": "active",
+            "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+          }
+        }
+      ],
+      "wait_threads": [
+        {
+          "threadId": "child-1",
+          "goal": {
+            "status": "active",
+            "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "new-task-failed",
+    "runtime": "codex",
+    "mode": "run",
+    "destination": "new",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run the approved goal in a new Codex task.",
+    "tools": {
+      "get_goal": [
+        {
+          "status": "active",
+          "objective": "Keep the parent goal."
+        }
+      ],
+      "list_projects": [
+        [
+          {
+            "id": "project-1",
+            "path": "/fixture/repo",
+            "isGitRepository": true
+          }
+        ]
+      ],
+      "create_thread": [
+        {
+          "error": "worktree setup failed"
+        }
+      ],
+      "list_threads": [
+        [
+          {
+            "threadId": "child-1",
+            "clientThreadId": "pending-1",
+            "hostId": "local"
+          }
+        ]
+      ],
+      "read_thread": [
+        {
+          "threadId": "child-1",
+          "goal": {
+            "status": "active",
+            "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+          }
+        }
+      ],
+      "wait_threads": [
+        {
+          "threadId": "child-1",
+          "goal": {
+            "status": "active",
+            "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "destination-no-recursion",
+    "runtime": "codex",
+    "mode": "run",
+    "destination": "new",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "You are already the destination task created by Goal Orchestrator. Launch the native Goal in this task. Do not create another task.",
+    "tools": {
+      "get_goal": [
+        null,
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      ],
+      "create_goal": [
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      ],
+      "update_goal": [
+        {
+          "status": "complete"
+        }
+      ]
+    },
+    "in_destination": true
+  },
+  {
+    "id": "completion-evidence",
+    "runtime": "codex",
+    "mode": "run",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Verify this active goal and mark it complete if the evidence supports it.",
+    "tools": {
+      "get_goal": [
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      ],
+      "run_check": [
+        {
+          "id": "suite",
+          "exit_code": 0,
+          "output": "OK: 2 tests"
+        }
+      ],
+      "review_artifact": [
+        {
+          "id": "artifact",
+          "matches": true,
+          "output": "result.txt: ready"
+        }
+      ],
+      "update_goal": [
+        {
+          "status": "complete"
+        }
+      ]
+    },
+    "action": "complete",
+    "required_evidence": [
+      "suite",
+      "artifact"
+    ]
+  },
+  {
+    "id": "completion-failed-check",
+    "runtime": "codex",
+    "mode": "run",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Verify this active goal and mark it complete if the evidence supports it.",
+    "tools": {
+      "get_goal": [
+        {
+          "status": "active",
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      ],
+      "run_check": [
+        {
+          "id": "suite",
+          "exit_code": 1,
+          "output": "FAILED: 1 test"
+        }
+      ],
+      "review_artifact": [
+        {
+          "id": "artifact",
+          "matches": true,
+          "output": "result.txt: ready"
+        }
+      ],
+      "update_goal": [
+        {
+          "status": "complete"
+        }
+      ]
+    },
+    "action": "complete",
+    "required_evidence": [
+      "suite",
+      "artifact"
+    ]
+  },
+  {
+    "id": "claude-handover",
+    "runtime": "claude",
+    "mode": "run",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run the already approved goal in this task. Preserve notes.txt; no commits or external actions.",
+    "tools": {},
+    "known_goal": null
+  },
+  {
+    "id": "claude-budget",
+    "runtime": "claude",
+    "mode": "run",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run the approved goal with a 12000 token budget in Claude Code.",
+    "tools": {},
+    "requested_budget": 12000,
+    "known_goal": null
+  },
+  {
+    "id": "kimi-handover",
+    "runtime": "kimi",
+    "mode": "run",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Run the already approved goal in this task. Preserve notes.txt; no commits or external actions.",
+    "tools": {},
+    "known_goal": null
+  },
+  {
+    "id": "kimi-next-without-active-goal",
+    "runtime": "kimi",
+    "mode": "draft",
+    "destination": "current",
+    "workspace": {
+      "path": "/fixture/repo",
+      "branch": "fixture",
+      "commit": "abc123",
+      "dirty_paths": [
+        "notes.txt"
+      ]
+    },
+    "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+    "user_request": "Queue this for later with /goal next, but do not start work now. There is no active goal.",
+    "tools": {},
+    "known_goal": null
+  }
+]

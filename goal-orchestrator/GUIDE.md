@@ -1,6 +1,6 @@
 # Goal Orchestrator Guide
 
-This guide explains how to turn broad work into safe, measurable native Codex goals. The short operational rules live in `skills/goal-orchestrator/SKILL.md`; this document provides examples and rationale.
+This guide explains how to turn broad work into safe, measurable native goals. The shared operational rules live in [the skill](skills/goal-orchestrator/SKILL.md); the bundled runtime references adapt them to Codex, Claude Code, or Kimi Code.
 
 ## Contents
 
@@ -12,7 +12,10 @@ This guide explains how to turn broad work into safe, measurable native Codex go
 6. [Delegate Independent Work](#delegate-independent-work)
 7. [Verify Completion](#verify-completion)
 8. [Troubleshooting](#troubleshooting)
-9. [Claude Code Compatibility](#claude-code-compatibility)
+9. [Select the host before launch](#select-the-host-before-launch)
+10. [Preserve provenance and iteration evidence](#preserve-provenance-and-iteration-evidence)
+11. [Use explicit executable checks](#use-explicit-executable-checks)
+12. [Acceptance evidence](#acceptance-evidence)
 
 ## The Two-Layer Model
 
@@ -107,7 +110,7 @@ If blocked:
 
 The goal body becomes the execution prompt and completion criteria. Keep it at or below 4,000 characters. Move background detail into the brief or a referenced file.
 
-Each verification bullet names the output that proves it. The native checker judges only what the conversation shows, so a claim that a command passed, without its output, is not evidence.
+Each verification bullet names the output that proves it. Claude’s native evaluator judges conversation evidence. In every host, report the decisive output or observation so completion can be reviewed.
 
 ### Good objective
 
@@ -134,13 +137,13 @@ Verification:
 
 ### Budgets
 
-In Codex, do not insert a conventional turn limit into every goal; pass the native token budget only when the user explicitly requests one. In Claude Code, an `or stop after N turns` clause is the only bound available, so offer it. A budget or cap limits a run; reaching it is an unsuccessful stop, not completion.
+In Codex, do not insert a conventional turn limit into every goal; pass the native token budget only when the user explicitly requests one. In Claude Code, offer an optional turn or time clause; do not claim that a Codex token budget was applied. In Kimi Code, put stop conditions in the objective and keep queue controls separate. A budget or cap limits a run; reaching it is an unsuccessful stop, not completion.
 
 ## Launch and Lifecycle
 
 Before an explicit launch:
 
-1. Show the proposed goal unless the exact text is already approved.
+1. Show the proposed goal as part of the launch record. Carry existing execution authorization forward; ask again only for missing decisions or authority.
 2. Choose the launch destination.
 3. Inspect the relevant goal state and preserve unfinished work.
 4. Confirm the workspace, dirty tree, verification commands, and approval points.
@@ -168,7 +171,7 @@ Use this route only when the user explicitly asks for a new, separate, parallel,
    ```
 
 6. Tell the destination to inspect its own Goal state, call `create_goal`, inspect again, and report that the Goal is active.
-7. Treat `create_thread` as asynchronous. A temporary `clientThreadId` is not a usable `threadId`; wait for the real task identifiers, then use `wait_threads` or `read_thread` to confirm Goal activation.
+7. Treat `create_thread` as asynchronous. A temporary `clientThreadId` is not a usable `threadId`; wait for the real task identifiers, then use `wait_threads` or `read_thread` to inspect activation evidence. Read outputs when needed to confirm the destination's post-creation `get_goal` result matches the objective and budget; an unsupported active claim is insufficient.
 8. Open the new task in the Codex UI only when the user asks to see it.
 
 If task creation is unavailable, provide the complete prompt for the user to paste into a new task or ask whether launching in the current task is acceptable. Never change destinations silently.
@@ -183,7 +186,7 @@ Codex provides these user controls:
 
 The agent should not silently invoke those lifecycle controls. New authority, irreversible actions, or material product decisions still require the user.
 
-Runtime rules above were verified against Codex 0.151.0 and Claude Code 2.1.263 on 2026-09-07. The Codex three-turn blocked rule and the `create_goal` budget rule come from the CLI's embedded tool contract, not public documentation; re-check them after upgrading either host.
+The [Codex reference](skills/goal-orchestrator/references/codex.md) records the native tool contract and current sources. The three-turn blocked rule and native budget argument belong to Codex, not to Claude or Kimi. Each runtime reference carries a last-checked date; inspect actual capabilities before launch.
 
 ## Delegate Independent Work
 
@@ -225,9 +228,9 @@ Before marking a goal complete:
 
 Mark a native goal complete only when the entire objective is achieved and no required work remains.
 
-Mark it blocked only after the same blocking condition has persisted for at least three consecutive goal turns and no meaningful in-scope progress remains. If a blocked goal is resumed, begin a fresh blocked audit. Difficulty, uncertainty, incomplete work, or a nearly exhausted budget are not blocking verdicts by themselves.
+In Codex, mark it blocked only after the same blocking condition has persisted for at least three consecutive goal turns and no meaningful in-scope progress remains. If a blocked goal is resumed, begin a fresh blocked audit. Difficulty, uncertainty, incomplete work, or a nearly exhausted budget are not blocking verdicts by themselves.
 
-For a budgeted goal, report the final token usage returned by the goal tool after successful completion.
+For a budgeted Codex goal, report the final token usage returned by the goal tool after successful completion.
 
 ## Troubleshooting
 
@@ -255,8 +258,56 @@ Stop concurrent writing, select one implementation owner, reconcile the workspac
 
 Use supervised planning or execution with explicit approval points. A persistent goal is not a reason to remove the human from high-impact decisions.
 
-## Claude Code Compatibility
+## Select the host before launch
 
-The brief, goal-shaped gate, explicit launch rule, safety boundaries, selective delegation, and final verification are portable. Claude Code exposes no goal tool to the model: `/goal <condition>` is a user command, so a run there is a handover of the exact `/goal` text (for a headless run, write it to a file and pass `claude -p "$(cat goal.md)"`; never inline it in double quotes, because the shell would execute its backticked commands first), and the checker judges only what the conversation shows. Invoke the skill as `/goal-orchestrator:goal-orchestrator` from a marketplace install or `/goal-orchestrator` from a manual copy. Claude Code goal commands, checker behavior, permissions, and agent tools can change independently, so translate those controls from current Claude Code documentation instead of copying Codex-specific lifecycle rules.
+The entry skill keeps the shared workflow and loads only the applicable
+[Codex](skills/goal-orchestrator/references/codex.md),
+[Claude Code](skills/goal-orchestrator/references/claude.md), or
+[Kimi Code](skills/goal-orchestrator/references/kimi.md) reference. Identify the app
+from the environment and exposed tools, never from the model's name.
 
-A goal does not change permission mode, so a walk-away run needs auto mode or pre-allowed verification and edit commands; Manual mode stalls at the first prompt. Wait for every subagent and background shell before ending a turn, because evaluation is skipped while they run. There is no blocked status: when a blocker persists, state it and what would unblock it in plain text, then stop. Unrecoverable errors such as expired credentials that Claude Code manages, exhausted credits, an uncompactable context, or an unavailable model clear the goal with a warning, so tell the user to re-run `/goal`; resuming a session restores an active goal but resets its turn count, timer, and token-spend baseline as shown by `/goal`, and a textual turn clause is still judged from the conversation.
+Claude and Kimi normally hand over user `/goal` commands. Displaying one is not a
+launch. Codex requires preflight state inspection, creation, and a matching
+post-creation state in the actual destination task. If those tools are missing,
+report a handover. If task setup or activation is pending or fails, report that
+state and preserve the requested destination.
+
+Keep current permissions. If a host reports a trust, hook, or capability problem,
+record the diagnostic; do not change policy to force autonomous execution. Use
+only that host's lifecycle controls. Claude replacement and Kimi queued `next`
+have different effects; Kimi `next` starts immediately when no goal is active.
+
+## Preserve provenance and iteration evidence
+
+The [brief and evidence record](skills/goal-orchestrator/references/artifacts.md)
+adds source paths/dates, workspace/ref, acceptance-to-evidence mapping, unresolved
+decisions, and what to record between attempts. The brief generator fills metadata
+only; it does not replace Git, instruction, or verification-script discovery.
+
+After an attempt, capture decisive evidence, what was learned, the next useful
+experiment, and what would unblock progress. Keep the finish line stable while
+adapting the approach. For an unsuccessful stop, list unfinished criteria,
+attempts/output, preserved artifacts/native state, and a concrete next step.
+
+## Use explicit executable checks
+
+Native goals can still contain prose review criteria. For optional helper
+execution, use the [verification record format](skills/goal-orchestrator/references/verification.md)
+and [complete example](examples/verification-goal.md). Each command names its exact
+working directory and expected exit status. Inspection files and human checks
+remain separate; the helper never executes inferred prose.
+
+The helper's default template mode checks structure only. Readiness detects
+unresolved placeholders/decisions without executing anything. Execution requires
+`--test-commands --yes`, prints the whole plan first, and returns nonzero when a
+required check fails or manual evidence remains pending. A `PASS` only covers the
+declared checks; the main agent must still establish that they prove the outcome.
+
+## Acceptance evidence
+
+The smoke suite and Python tests exercise parsing, verdicts, exact command and
+working-directory handling, timeouts, and packaging. The [behavioral cases](evals/README.md)
+exercise simulated host calls with fixed results and optional Claude model-backed
+evals. These are separate evidence levels. Confirm skill discovery and actual
+native activation in each host only when those runs are authorized; never relabel
+simulated results as live platform acceptance.

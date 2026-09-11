@@ -5,6 +5,9 @@ marketplace once, then pick which kits to install — globally or per-repo.
 
 **Supported hosts:** Claude Code and Codex.
 
+Goal Orchestrator also includes Kimi Code instructions and a standalone skill
+installation. Support for the other kits is unchanged.
+
 ## Projects (plugins)
 
 | Plugin | What it is for | Skills | Start here |
@@ -72,11 +75,21 @@ installations should replace the old marketplace package explicitly:
 Invocation depends on the host. In Codex the mention is unchanged:
 `$goal-orchestrator`. In Claude Code, plugin skills are namespaced by plugin
 name, so the marketplace command changed from
-`/agent-workflow-kit:goal-orchestrator` to `/goal-orchestrator:goal-orchestrator`
-(the bare `/goal-orchestrator` also works when no other command uses that name).
+`/agent-workflow-kit:goal-orchestrator` to `/goal-orchestrator:goal-orchestrator`.
 A manual copy into `~/.claude/skills/` is `/goal-orchestrator`. For a
 Project-scope installation, reinstall at that scope and commit the resulting
 `.claude/settings.json` update.
+
+| Goal Orchestrator installation | Invocation |
+| --- | --- |
+| Codex personal or project skill | `$goal-orchestrator` |
+| Claude Code personal/project copy | `/goal-orchestrator` |
+| Claude Code marketplace plugin | `/goal-orchestrator:goal-orchestrator` |
+| Kimi Code standalone skill | `/skill:goal-orchestrator` |
+
+See the [Goal Orchestrator installation and validation guide](goal-orchestrator/README.md#install-and-confirm-discovery)
+for complete-copy commands and host discovery checks. These are distinct from
+launching a native goal; a displayed command is only a handover.
 
 ## Manual install (no marketplace)
 

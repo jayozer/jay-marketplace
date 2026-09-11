@@ -1,8 +1,65 @@
 # Goal Orchestrator Behavioral Evals
 
-Model-backed acceptance cases for the `goal-orchestrator` skill, run with `claude plugin eval`. They replace "the wording exists in Markdown" as the only behavioral evidence: each case gives a real prompt to Claude Code with the plugin loaded and grades what the skill actually did.
+Acceptance cases for the `goal-orchestrator` skill: simulated host traces with fixed tool responses, plus optional Claude model-backed runs. Wording tests remain documentation tripwires; neither wording nor trace validation proves a real native Goal launched.
 
-## What the suite tests
+## Simulated host decisions
+
+`runtime_cases.json` contains 18 independent prompts and immutable mock tool
+responses. They cover draft/Plan mode, explicit current-task launch, unfinished
+goals, unavailable tools, failed creation, mismatched activation, requested and
+unrequested budgets, pending/failed/new-task activation, real destination IDs,
+preserving a parent Goal, recursion prevention, and evidence before completion.
+Claude and Kimi cases exercise user-command handovers, including a Kimi `next`
+request that must stay a draft because no Goal is active.
+
+The trace format is:
+
+```json
+{
+  "case_id": "tools-unavailable",
+  "calls": [],
+  "final": {"state": "handover", "destination": "current"},
+  "response": "Not launched: the Goal tools are unavailable."
+}
+```
+
+Calls name the fixture's tool, `arguments`, and optional `target` (default
+`current`). The grader supplies results from the fixture in call order; a model
+cannot insert its own successful result. Final states are `draft`, `handover`,
+`pending`, `failed`, `conflict`, `active`, `complete`, or `unfinished`.
+Mock `run_check` and `review_artifact` expose the fixed completion evidence;
+each requires exactly `{"id": "<record id>"}` matching its queued result before
+that evidence is credited. Missing, wrong, or extra arguments fail grading.
+They are not native Goal APIs. The fixture's `read_thread`/`wait_threads` result
+is normalized evidence from the destination's post-creation `get_goal` output,
+not a claim about raw desktop response schemas or an agent's unsupported summary.
+
+```sh
+python3 goal-orchestrator/scripts/grade_runtime_trace.py \
+  goal-orchestrator/evals/fixtures/runtime-traces/forward-2026-09-10.json
+python3 -m unittest discover -s goal-orchestrator/tests -p 'test_runtime_traces.py'
+```
+
+The saved trace was produced by an independent agent applying the shared skill
+and relevant references to these cases on 2026-09-10. The agent did not read the
+grader, implementation tests, or review conclusions and did not invoke any real
+Goal, task, provider, or external service. Its responses are retained for manual
+inspection. The grader initially incorrectly rejected a correctly reported
+activation mismatch; a regression now distinguishes that conflict from a false
+active claim. All 18 traces then passed.
+
+Rerunning a saved trace validates the grading contract; it is not a fresh model
+evaluation. The Python suite also feeds incorrect order, fake results, wrong IDs,
+unrequested budgets, missing evidence, and forbidden lifecycle actions to the
+grader and requires rejection. Review the natural-language response separately:
+the deterministic grader covers state/actions, not every wording or product choice.
+
+For a new authorized forward test, give an independent agent only the skill,
+relevant references, and raw cases. Use a disposable directory for outputs and
+forbid real host calls. Real host discovery and native activation require separate
+authorized checks with captured host state and actual workspace evidence.
+
+## Optional Claude model-backed cases
 
 All seven cases run in Claude Code, with the system prompt telling the model it is in Claude Code 2.1.263 and has no goal tool. Each case runs once, with at most 8 turns and a 240-second timeout, against a copy of the `fixtures/sample-repo` workspace (one passing and one deliberately failing unittest).
 
@@ -27,7 +84,10 @@ Codex-only routes have no counterpart in Claude Code and are not covered here:
 - `update_goal` with the `complete` and three-turn `blocked` rules;
 - `/goal edit`, `/goal pause`, and `/goal resume`.
 
-Those remain covered only by the wording pinned in `tests/test_goal_tools.py` and by manual Codex runs.
+The simulated trace cases cover those routing decisions without a real host.
+Actual Codex Goal execution, discovery, and runtime integration remain separate
+manual acceptance checks. Kimi model-backed execution is also not covered by the
+Claude runner.
 
 ## Layout
 
@@ -35,6 +95,8 @@ Those remain covered only by the wording pinned in `tests/test_goal_tools.py` an
 evals/
 ├── README.md
 ├── .gitignore                 (ignores results/)
+├── runtime_cases.json         fixed prompts and simulated host responses
+├── fixtures/runtime-traces/   saved independent forward-test responses
 ├── fixtures/sample-repo/      shared workspace: README.md, AGENTS.md, src/calc.py, tests/test_calc.py
 └── <case>/
     ├── case.yaml              schema_version "1.1", tags, runs, scaffold_script, execution settings

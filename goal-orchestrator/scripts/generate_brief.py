@@ -184,7 +184,11 @@ def generate_brief(project_dir: Path, task_description: str = "") -> str:
     tech_stack = ", ".join(project_info.get("tech_stack") or ["Unknown"])
     key_features = ", ".join(project_info.get("key_features") or ["None specified"])
 
-    brief = f"""# Execution-Ready Brief
+    sources = [path.name for path in (readme_path, package_json_path, pyproject_path) if path.exists()]
+    brief = f"""# Draft Brief Scaffold
+
+Metadata only: README.md, package.json, and pyproject.toml. Git state, applicable
+instructions, verification scripts, and execution readiness have not been checked.
 
 ## Goal
 
@@ -204,6 +208,12 @@ Relevant current behavior, files, sources, or environment details:
 
 [Add only context that changes execution]
 
+## Source Provenance
+
+- Project path: {project_dir.resolve()}
+- Metadata files present: {', '.join(sources) or 'none'}
+- [Record branch/ref, commit, dirty work ownership, source dates, and facts still unverified]
+
 ## Output
 
 [List the required code, files, report, artifact, or user-facing result]
@@ -218,6 +228,26 @@ Relevant current behavior, files, sources, or environment details:
 - [Name the focused tests, observations, measurements, or review criteria]
 - [Name the broader regression check when applicable]
 - [Include final artifact or diff review]
+
+Acceptance-to-evidence mapping:
+
+| Criterion | Check or observation | Expected result | Observed evidence |
+| --- | --- | --- | --- |
+| [criterion] | [command with cwd, or human check] | [expected result] | PENDING |
+
+## Decisions Needed
+
+- [List unresolved choices or approvals and who can resolve them; remove this section when resolved]
+
+## Iteration Policy
+
+- Record the last attempt, decisive output, what was learned, and the next useful experiment.
+- Keep uncertainty visible and preserve the success criteria.
+
+## Unsuccessful Stop
+
+- Report attempts, evidence, unfinished criteria, the blocker, preserved artifacts, and the next step.
+- Use the current host's stopping rules; clearing or restarting a goal needs user direction.
 
 ## Next Steps
 
