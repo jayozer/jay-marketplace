@@ -28,7 +28,9 @@ Calls name the fixture's tool, `arguments`, and optional `target` (default
 cannot insert its own successful result. Final states are `draft`, `handover`,
 `pending`, `failed`, `conflict`, `active`, `complete`, or `unfinished`.
 Mock `run_check` and `review_artifact` expose the fixed completion evidence;
-they are not native Goal APIs. The fixture's `read_thread`/`wait_threads` result
+each requires exactly `{"id": "<record id>"}` matching its queued result before
+that evidence is credited. Missing, wrong, or extra arguments fail grading.
+They are not native Goal APIs. The fixture's `read_thread`/`wait_threads` result
 is normalized evidence from the destination's post-creation `get_goal` output,
 not a claim about raw desktop response schemas or an agent's unsupported summary.
 

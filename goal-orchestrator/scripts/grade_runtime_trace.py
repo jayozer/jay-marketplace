@@ -120,6 +120,9 @@ def grade_trace(case: dict[str, Any], trace: dict[str, Any]) -> list[str]:
                 verified.add(child_id)
 
         elif name in {"run_check", "review_artifact"}:
+            if not result.get("id") or args != {"id": result["id"]}:
+                issues.append("evidence call arguments must select the fixture's matching record")
+                continue
             if result.get("output") and (
                 (name == "run_check" and result.get("exit_code") == 0)
                 or (name == "review_artifact" and result.get("matches") is True)

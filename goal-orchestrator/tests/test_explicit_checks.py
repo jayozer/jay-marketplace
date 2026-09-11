@@ -49,6 +49,20 @@ class ExplicitExecutionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(json.loads(result.stdout)["analyses"][0]["command_tests"][0]["output"], '{"ok": true}')
 
+    def test_shell_variables_and_awk_are_not_authoring_placeholders(self):
+        cases = [
+            ('GOAL_CHECK_VALUE=expected; printf \'%s\' "$GOAL_CHECK_VALUE"', 'expected'),
+            ('GOAL_CHECK_VALUE=expected; printf \'%s\' "${GOAL_CHECK_VALUE}"', 'expected'),
+            ("printf 'expected\\n' | awk '{print}'", 'expected\n'),
+        ]
+        for command, expected in cases:
+            with self.subTest(command=command):
+                result = run_benchmark(executable_goal(command), "--test-commands", "--yes")
+                self.assertEqual(result.returncode, 0, result.stdout)
+                report = json.loads(result.stdout)
+                self.assertEqual(report["analyses"][0]["unresolved_placeholders"], [])
+                self.assertEqual(report["analyses"][0]["command_tests"][0]["output"], expected)
+
     def test_exact_pairs_deduplicate_but_prefix_commands_and_directories_survive(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -91,7 +105,8 @@ class ExplicitExecutionTests(unittest.TestCase):
     def test_placeholder_or_malformed_record_prevents_all_execution(self):
         with tempfile.TemporaryDirectory() as tmp:
             marker = Path(tmp) / "marker"
-            for invalid in ('{"command":"true"}', '{"command":"<COMMAND>","cwd":"."}'):
+            for invalid in ('{"command":"true"}', '{"command":"<COMMAND>","cwd":"."}',
+                            '{"command":"[TEST COMMAND]","cwd":"."}'):
                 goal = executable_goal(f"touch {marker}") + "\n- Command: " + invalid
                 result = run_benchmark(goal, "--test-commands", "--yes")
                 self.assertEqual(result.returncode, 1)

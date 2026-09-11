@@ -16,6 +16,8 @@ Each record retains its declared directory. For the repository helper, a relativ
 
 Template placeholders must be replaced before execution. Missing executables, permission errors, shell syntax failures, timeouts, and unexpected exit statuses fail verification. An expected `127` does not excuse a missing executable. Ordinary prose remains a pending manual criterion, even if the lint helper can suggest a command from it.
 
+In explicit command strings, reserve `[TEST COMMAND]` or `<command>` for authoring placeholders. Dollar expressions such as `$HOME` and `${NAME}`, and brace expressions such as awk's `{print}`, are treated as executable syntax rather than placeholders. The helper does not prove that referenced variables are set. Prose, directory, and evidence fields retain the broader placeholder checks; directories are literal paths, not shell-expanded strings.
+
 ## Interpreting helper results
 
 The repository's `benchmark_goals.py` is optional authoring tooling; it is not the native Goal runtime and is not included in a standalone skill copy.

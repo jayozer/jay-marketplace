@@ -145,8 +145,8 @@ class RuntimeTraceTests(unittest.TestCase):
         self.assert_fails(trace, "must not supply its own tool results")
 
     def test_every_acceptance_criterion_needs_evidence_before_completion(self):
-        trace = {"case_id": "completion-evidence", "calls": [call("get_goal"), call("run_check"),
-                 call("review_artifact"), call("update_goal", {"status": "complete"})],
+        trace = {"case_id": "completion-evidence", "calls": [call("get_goal"), call("run_check", {"id": "suite"}),
+                 call("review_artifact", {"id": "artifact"}), call("update_goal", {"status": "complete"})],
                  "final": {"state": "complete", "destination": "current"}}
         self.assert_passes(trace)
         skipped = copy.deepcopy(trace)
@@ -155,6 +155,19 @@ class RuntimeTraceTests(unittest.TestCase):
         failed = copy.deepcopy(trace)
         failed["case_id"] = "completion-failed-check"
         self.assert_fails(failed, "decisive evidence for every criterion")
+
+    def test_evidence_calls_must_request_the_matching_record(self):
+        for index in (1, 2):
+            for arguments in ({}, {"id": "WRONG"}, {"id": "suite" if index == 1 else "artifact", "other": True}):
+                with self.subTest(index=index, arguments=arguments):
+                    trace = {"case_id": "completion-evidence", "calls": [
+                        call("get_goal"), call("run_check", {"id": "suite"}),
+                        call("review_artifact", {"id": "artifact"}),
+                        call("update_goal", {"status": "complete"})],
+                        "final": {"state": "complete", "destination": "current"}}
+                    trace["calls"][index]["arguments"] = arguments
+                    self.assert_fails(trace, "evidence call arguments")
+                    self.assert_fails(trace, "decisive evidence for every criterion")
 
     def test_user_command_hosts_handover_without_native_calls(self):
         for case_id in ("claude-handover", "claude-budget", "kimi-handover"):

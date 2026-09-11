@@ -47,7 +47,13 @@ BARE_CHECK = re.compile(
     r"(?:proven by running\s+)?(.+?)\s+(?:exits 0|passes\b|shows\b)", re.IGNORECASE
 )
 BARE_PROVEN_BY_RUNNING = re.compile(r"proven by running\s+(.+)$", re.IGNORECASE)
-# Unresolved template placeholders: [UPPER WORDS], <...>, {...}, ${...}, $NAME.
+# Executable records reserve bracket/angle markers for authoring placeholders.
+# Dollar expansions and braces are executable syntax (shell, awk, etc.), not
+# evidence that an explicitly declared command is an unfinished template.
+COMMAND_PLACEHOLDER = re.compile(
+    r"\[[A-Z][A-Z0-9 /_-]*\]|<[A-Za-z_][A-Za-z0-9 /_-]*>"
+)
+# Prose/path placeholders also include {...}, ${...}, and $NAME.
 UNRESOLVED_PLACEHOLDER = re.compile(
     r"\[[A-Z][A-Z0-9 /_-]*\]|<[A-Za-z_][A-Za-z0-9 /_-]*>|"
     r"\$?\{[A-Za-z_][A-Za-z0-9 /_-]*\}|\$[A-Z][A-Z0-9_]*\b"
@@ -194,8 +200,9 @@ def find_unresolved_placeholders(goal: dict[str, Any]) -> list[str]:
     texts = [*(item["criterion"] for item in manual), *goal["done_when"],
              goal["objective"], *goal["constraints"], *goal.get("decisions_needed", [])]
     for check in checks:
-        texts.extend([check["command"], check["cwd"], check.get("evidence", "")])
+        texts.extend([check["cwd"], check.get("evidence", "")])
     tokens = [token for text in texts for token in UNRESOLVED_PLACEHOLDER.findall(text)]
+    tokens.extend(token for check in checks for token in COMMAND_PLACEHOLDER.findall(check["command"]))
     return list(dict.fromkeys(tokens))
 
 
