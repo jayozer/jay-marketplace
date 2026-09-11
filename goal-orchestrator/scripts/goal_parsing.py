@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared parsing of Codex /goal blocks.
+"""Shared parsing of goal blocks with explicit host lifecycle filtering.
 
 The canonical format is:
 
@@ -39,7 +39,14 @@ from typing import Any
 CURRENT_GOAL_SUBCOMMANDS = {"edit", "pause", "resume", "clear"}
 LEGACY_GOAL_SUBCOMMANDS = {"stop", "off", "reset", "none", "cancel", "--resume"}
 GOAL_SUBCOMMANDS = CURRENT_GOAL_SUBCOMMANDS | LEGACY_GOAL_SUBCOMMANDS
-SECTION_HEADINGS = {"done when:", "constraints:", "verification:", "if blocked:"}
+RUNTIME_SUBCOMMANDS = {
+    "codex": GOAL_SUBCOMMANDS,
+    "claude": {"clear", "stop", "off", "reset", "none", "cancel"},
+    "kimi": {"status", "pause", "resume", "cancel", "replace", "next"},
+}
+SECTION_HEADINGS = {
+    "done when:", "constraints:", "verification:", "if blocked:", "decisions needed:",
+}
 LEGACY_PREFIXES = ("done only when", "constraints:", "verification:", "stop after")
 
 # Directories skipped when scanning a directory for markdown files.
@@ -104,21 +111,28 @@ def _line_ref(number: int, source: str | None) -> str:
     return f"line {number}" if source is None else f"line {number} of {source}"
 
 
-def find_goal_block_records(text: str, source: str | None = None) -> list[dict[str, Any]]:
+def find_goal_block_records(
+    text: str, source: str | None = None, *, runtime: str = "codex"
+) -> list[dict[str, Any]]:
     """Find canonical and legacy goal blocks without treating subcommands as goals.
 
     Each record carries the normalized ``block`` text and a ``diagnostics``
     list that names any line where the parser had to stop early.
     """
+    subcommands = RUNTIME_SUBCOMMANDS[runtime]
     records: list[dict[str, Any]] = []
     lines = text.splitlines()
+    original_lines = text.splitlines(keepends=True)
     i = 0
 
     while i < len(lines):
         stripped = lines[i].strip()
         rest = stripped[len("/goal ") :].strip() if stripped.startswith("/goal ") else ""
+        escaped = runtime == "kimi" and rest.startswith("-- ")
+        if escaped:
+            rest = rest[3:].strip()
         first_word = rest.split()[0] if rest else ""
-        if not rest or first_word in GOAL_SUBCOMMANDS:
+        if not rest or (not escaped and first_word in subcommands):
             i += 1
             continue
 
@@ -170,6 +184,11 @@ def find_goal_block_records(text: str, source: str | None = None) -> list[dict[s
                             f"outside any section: '{following}'"
                         )
                     )
+                elif current_section and next_index is not None and lines[next_index][:1].isspace():
+                    diagnostics.append(ended(
+                        f"indented continuation at {_line_ref(next_index + 1, source)} "
+                        "after a blank line is unsupported; keep the item together or use another bullet"
+                    ))
                 break
 
             if lower in SECTION_HEADINGS:
@@ -194,6 +213,11 @@ def find_goal_block_records(text: str, source: str | None = None) -> list[dict[s
             # Allow a wrapped line inside a structured section, but do not absorb
             # unrelated prose that follows a complete goal block.
             if current_section and _is_bullet(block[-1]):
+                if current_section == "verification" and _strip_bullet(block[-1]).lower().startswith("command:"):
+                    diagnostics.append(
+                        f"Command record must occupy one line; continuation at {_line_ref(i + 1, source)}"
+                    )
+                    break
                 block[-1] = f"{block[-1]} {line}"
                 end_index = i
                 i += 1
@@ -201,15 +225,16 @@ def find_goal_block_records(text: str, source: str | None = None) -> list[dict[s
 
             if current_section is None and len(block) == 1 and _is_plain_prose(line):
                 # A wrapped objective is absorbed only when a section heading
-                # follows before the next blank line. Otherwise diagnose it
+                # follows, allowing a blank before it. Otherwise diagnose it
                 # rather than guess whether the prose belongs to the goal.
                 j = i
                 while j < len(lines) and _is_plain_prose(lines[j].strip()):
                     j += 1
-                if j < len(lines) and lines[j].strip().lower() in SECTION_HEADINGS:
+                heading_index = _next_nonempty_index(lines, j)
+                if heading_index is not None and lines[heading_index].strip().lower() in SECTION_HEADINGS:
                     block[0] = " ".join([block[0], *(lines[k].strip() for k in range(i, j))])
                     end_index = j - 1
-                    i = j
+                    i = heading_index
                     continue
                 diagnostics.append(
                     f"Possible wrapped objective at {_line_ref(i + 1, source)}: '{line}'"
@@ -234,11 +259,25 @@ def find_goal_block_records(text: str, source: str | None = None) -> list[dict[s
 
         # The raw body keeps blank lines and original spacing; only the
         # "/goal " prefix on the first line is dropped.
-        first_raw = lines[start_index].lstrip()[len("/goal ") :]
-        raw = "\n".join([first_raw, *lines[start_index + 1 : end_index + 1]])
+        first_raw = original_lines[start_index].lstrip()[len("/goal ") :]
+        raw = "".join([first_raw, *original_lines[start_index + 1 : end_index + 1]]).rstrip("\r\n")
+        # Retain rejected source too, so a diagnostic can be audited without
+        # mistaking the shortened parse for the whole submitted candidate.
+        excerpt_end = end_index
+        if diagnostics:
+            for cursor in range(end_index + 1, len(lines)):
+                following = lines[cursor].strip()
+                if following.startswith(("```", "/goal")) or (
+                    following.startswith("#") and not _is_section_like(following)
+                ):
+                    break
+                excerpt_end = cursor
         records.append(
             {
                 "block": "\n".join(block),
+                "raw_goal": raw,
+                "source_excerpt": "".join(original_lines[start_index : excerpt_end + 1]),
+                "source_excerpt_span": {"start_line": start_index + 1, "end_line": excerpt_end + 1},
                 "diagnostics": diagnostics,
                 "source_span": {"start_line": start_index + 1, "end_line": end_index + 1},
                 "raw_character_count": len(raw),
@@ -260,7 +299,7 @@ def _extract_field(block: str, pattern: str) -> str | None:
     return match.group(1).rstrip(" .")
 
 
-def _section_items(block: str, heading: str) -> list[str]:
+def _section_items(block: str, heading: str, *, preserve: bool = False) -> list[str]:
     lines = block.splitlines()
     items: list[str] = []
     collecting = False
@@ -272,9 +311,10 @@ def _section_items(block: str, heading: str) -> list[str]:
             collecting = lower == f"{heading.lower()}:"
             continue
         if collecting and _is_bullet(stripped):
-            items.append(_strip_bullet(stripped).strip().rstrip(" ."))
+            item = _strip_bullet(stripped).strip()
+            items.append(item if preserve else item.rstrip(" ."))
         elif collecting and stripped:
-            items.append(stripped.rstrip(" ."))
+            items.append(stripped if preserve else stripped.rstrip(" ."))
 
     return [item for item in items if item]
 
@@ -327,30 +367,44 @@ def _extract_turn_limit(block: str) -> int | None:
 def parse_goal(block: str) -> dict[str, Any]:
     """Parse one goal body while preserving the legacy output fields."""
     first_line = block.splitlines()[0]
-    objective = re.split(r"(?<=[.!?])\s", first_line)[0].strip()
+    objective = re.split(r"\s+(?:Done only when\b|Constraints:|Verification:|Stop after\s+\d)",
+                         first_line, maxsplit=1, flags=re.IGNORECASE)[0].strip()
     done_when = _section_items(block, "done when") or _legacy_done_when(block)
 
     return {
         "goal": block,
         "objective": objective,
         "verification": _extract_verification(block),
+        # Do not split these on semicolons or strip command punctuation.
+        "verification_items": _section_items(block, "verification", preserve=True)
+        or ([_extract_verification(block)] if _extract_verification(block) else []),
         "constraints": _extract_constraints(block),
         "turn_limit": _extract_turn_limit(block),
         "done_when": done_when,
         "if_blocked": _section_items(block, "if blocked"),
+        "decisions_needed": _section_items(block, "decisions needed"),
         "character_count": len(block),
         # Defaults for callers that pass a bare block; extract_goals_from_text
         # replaces them with the values measured against the original input.
         "raw_character_count": len(block),
+        "raw_goal": block,
+        "source_excerpt": block,
+        "source_excerpt_span": {"start_line": 1, "end_line": len(block.splitlines()) or 1},
         "source_span": {"start_line": 1, "end_line": len(block.splitlines()) or 1},
         "diagnostics": [],
     }
 
 
-def extract_goals_from_text(text: str, source: str | None = None) -> list[dict[str, Any]]:
+def extract_goals_from_text(
+    text: str, source: str | None = None, *, runtime: str = "codex"
+) -> list[dict[str, Any]]:
     goals: list[dict[str, Any]] = []
-    for record in find_goal_block_records(text, source):
+    for record in find_goal_block_records(text, source, runtime=runtime):
         goal = parse_goal(record["block"])
+        goal["runtime"] = runtime
+        goal["raw_goal"] = record["raw_goal"]
+        goal["source_excerpt"] = record["source_excerpt"]
+        goal["source_excerpt_span"] = dict(record["source_excerpt_span"])
         goal["raw_character_count"] = record["raw_character_count"]
         goal["source_span"] = dict(record["source_span"])
         goal["diagnostics"] = list(record["diagnostics"])
@@ -359,7 +413,7 @@ def extract_goals_from_text(text: str, source: str | None = None) -> list[dict[s
 
 
 def extract_goals_from_file(
-    file_path: Path, errors: list[str] | None = None
+    file_path: Path, errors: list[str] | None = None, *, runtime: str = "codex"
 ) -> list[dict[str, Any]]:
     """Parse one markdown file; an undecodable file yields no goals and an error.
 
@@ -367,7 +421,7 @@ def extract_goals_from_file(
     failure is appended there instead of raised so a directory scan continues.
     """
     try:
-        text = file_path.read_text(encoding="utf-8-sig")
+        text = file_path.read_bytes().decode("utf-8-sig")
     except UnicodeDecodeError as exc:
         message = (
             f"could not decode {file_path} as UTF-8 "
@@ -378,7 +432,7 @@ def extract_goals_from_file(
         errors.append(message)
         return []
 
-    goals = extract_goals_from_text(text, source=str(file_path))
+    goals = extract_goals_from_text(text, source=str(file_path), runtime=runtime)
     for index, goal in enumerate(goals, 1):
         goal["source_file"] = str(file_path)
         goal["index"] = index
@@ -398,21 +452,25 @@ def iter_markdown_files(root: Path):
                 yield Path(dirpath) / filename
 
 
-def collect_goals(inputs: list[str]) -> tuple[list[dict[str, Any]], list[str]]:
+def collect_goals(
+    inputs: list[str], *, runtime: str = "codex"
+) -> tuple[list[dict[str, Any]], list[str]]:
     """Resolve file, directory, or literal /goal inputs into parsed goals."""
     goals: list[dict[str, Any]] = []
     errors: list[str] = []
     for item in inputs:
-        path = Path(item)
-        if path.is_file():
-            goals.extend(extract_goals_from_file(path, errors))
-        elif path.is_dir():
-            for md_file in iter_markdown_files(path):
-                goals.extend(extract_goals_from_file(md_file, errors))
-        elif item.lstrip().startswith("/goal "):
-            for goal in extract_goals_from_text(item):
+        # Check literals before stat: long goal bodies are not filesystem paths.
+        if item.lstrip().startswith("/goal "):
+            for goal in extract_goals_from_text(item, runtime=runtime):
                 goal["source"] = "command_line"
                 goals.append(goal)
+            continue
+        path = Path(item)
+        if path.is_file():
+            goals.extend(extract_goals_from_file(path, errors, runtime=runtime))
+        elif path.is_dir():
+            for md_file in iter_markdown_files(path):
+                goals.extend(extract_goals_from_file(md_file, errors, runtime=runtime))
         else:
             errors.append(f"input not found (and not /goal text): {item}")
     return goals, errors

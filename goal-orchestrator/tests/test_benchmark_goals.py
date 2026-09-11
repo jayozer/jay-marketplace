@@ -37,8 +37,9 @@ def run_benchmark(
     )
 
 
-def legacy_goal(command: str) -> str:
-    return f"/goal Check. Done only when {command} exits 0, proven by running {command}."
+def executable_goal(command: str, cwd: str = ".", expected_exit: int = 0) -> str:
+    check = json.dumps({"command": command, "cwd": cwd, "expected_exit": expected_exit})
+    return f"/goal Check the fixture.\nDone when:\n- The check has its expected exit status.\nVerification:\n- Command: {check}"
 
 
 class TestCommandsExecutionTests(unittest.TestCase):
@@ -47,22 +48,23 @@ class TestCommandsExecutionTests(unittest.TestCase):
             marker = Path(tmp) / "marker"
             report_path = Path(tmp) / "report.json"
             result = run_benchmark(
-                legacy_goal(f"touch {marker}"),
+                executable_goal(f"touch {marker}"),
                 "--test-commands",
                 "-o",
                 str(report_path),
             )
 
-            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.returncode, 3, result.stderr)
             self.assertFalse(marker.exists(), "command ran without --yes")
             report = json.loads(report_path.read_text(encoding="utf-8"))
             self.assertEqual(report["execution"], "skipped: pass --yes to run")
             self.assertEqual(report["analyses"][0]["command_tests"], [])
-            self.assertIn(f"command_line: touch {marker}", result.stderr)
+            self.assertIn(f"touch {marker}", result.stderr)
+            self.assertEqual(report["summary"]["status"], "PENDING")
 
     def test_missing_command_fails_the_run(self) -> None:
         result = run_benchmark(
-            legacy_goal("definitely-not-a-cmd-xyz"), "--test-commands", "--yes"
+            executable_goal("definitely-not-a-cmd-xyz"), "--test-commands", "--yes"
         )
 
         self.assertEqual(result.returncode, 1, result.stderr)
@@ -83,7 +85,7 @@ class TestCommandsExecutionTests(unittest.TestCase):
         )
 
     def test_nonzero_exit_fails_the_run(self) -> None:
-        result = run_benchmark(legacy_goal("exit 7"), "--test-commands", "--yes")
+        result = run_benchmark(executable_goal("exit 7"), "--test-commands", "--yes")
 
         self.assertEqual(result.returncode, 1, result.stderr)
         report = json.loads(result.stdout)
@@ -91,11 +93,11 @@ class TestCommandsExecutionTests(unittest.TestCase):
         [command_test] = analysis["command_tests"]
         self.assertTrue(command_test["can_run"])
         self.assertEqual(command_test["exit_code"], 7)
-        self.assertIn("Verification command 'exit 7' exited 7", analysis["issues"])
+        self.assertIn("Verification command 'exit 7' exited 7 (expected 0)", analysis["issues"])
         self.assertIn("1 goal(s) have issues.", result.stderr)
 
     def test_successful_command_passes(self) -> None:
-        result = run_benchmark(legacy_goal("echo hello"), "--test-commands", "--yes")
+        result = run_benchmark(executable_goal("echo hello"), "--test-commands", "--yes")
 
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
@@ -110,26 +112,23 @@ class TestCommandsExecutionTests(unittest.TestCase):
             result.stderr,
         )
 
-    def test_prose_label_before_a_backticked_command_does_not_fail_the_run(self) -> None:
+    def test_legacy_prose_requires_manual_migration_before_execution(self) -> None:
         result = run_benchmark(
             "/goal Check. Done only when lint is clean. "
-            "Verification: Lint clean: `true` passes.",
-            "--test-commands",
-            "--yes",
+            "Verification: Lint clean: `true` passes.", "--test-commands", "--yes",
         )
-
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.returncode, 3, result.stderr)
         report = json.loads(result.stdout)
         [analysis] = report["analyses"]
-        self.assertEqual(analysis["verification_commands"], ["true"])
-        self.assertEqual([test["command"] for test in analysis["command_tests"]], ["true"])
-        self.assertEqual(analysis["issues"], [])
+        self.assertEqual(analysis["legacy_command_suggestions"], ["true"])
+        self.assertEqual(analysis["command_tests"], [])
+        self.assertEqual(report["summary"]["status"], "MANUAL")
 
 
 class CommandIsolationTests(unittest.TestCase):
     def test_commands_do_not_inherit_the_benchmark_stdin(self) -> None:
         result = run_benchmark(
-            legacy_goal("cat -"), "--test-commands", "--yes", stdin_text="from-parent\n"
+            executable_goal("cat -"), "--test-commands", "--yes", stdin_text="from-parent\n"
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -143,7 +142,7 @@ class TimeoutTests(unittest.TestCase):
     def test_timeout_flag_bounds_the_command(self) -> None:
         started = time.monotonic()
         result = run_benchmark(
-            legacy_goal("sleep 5"), "--test-commands", "--yes", "--timeout", "1"
+            executable_goal("sleep 5"), "--test-commands", "--yes", "--timeout", "1"
         )
         elapsed = time.monotonic() - started
 
@@ -167,7 +166,7 @@ class TimeoutTests(unittest.TestCase):
                 'sleep 30 & echo $! > "$1"; wait\n', encoding="utf-8"
             )
             result = run_benchmark(
-                legacy_goal(f"sh {spawner} {pid_file}"),
+                executable_goal(f"sh {spawner} {pid_file}"),
                 "--test-commands",
                 "--yes",
                 "--timeout",
@@ -310,7 +309,7 @@ class EmptyInputTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertIn("No goals found.", result.stderr)
-        self.assertEqual(result.stdout, "")
+        self.assertEqual(json.loads(result.stdout)["summary"]["status"], "NO_GOALS")
 
     def test_missing_input_is_still_exit_1(self) -> None:
         result = run_benchmark("no-such-file-for-benchmark.md")

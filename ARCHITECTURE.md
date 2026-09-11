@@ -67,9 +67,15 @@ Each plugin (kit) follows this structure:
 
 **Goal block:** Four sections — Done when, Constraints, Verification, If blocked — drafted by default and launched only when the user explicitly asks.
 
-**Execution:** Codex drives the native `create_goal`/`get_goal`/`update_goal` tools directly; Claude Code hands the user a copy-ready `/goal` command to run themselves. Sandbox and approval policy are unchanged on either host.
+**Execution:** The shared skill selects the current host and loads only its bundled [Codex](goal-orchestrator/skills/goal-orchestrator/references/codex.md), [Claude Code](goal-orchestrator/skills/goal-orchestrator/references/claude.md), or [Kimi Code](goal-orchestrator/skills/goal-orchestrator/references/kimi.md) reference. Codex can use native Goal tools after checking availability and existing state. Claude and Kimi user-command launches are handed over unless a verified callable interface exists. A matching post-launch state is required to claim activation. Sandbox and approval policy stay unchanged.
 
 **Helper scripts and examples:** `extract_goal.py`, `benchmark_goals.py`, `generate_brief.py`, and `goal_parsing.py`, plus the example templates, live at the plugin level, not inside the skill directory.
+
+Standalone copies include the entry skill, UI metadata, and all linked runtime,
+brief, and verification references. Optional repository helpers require the full
+checkout. Their structure/readiness results are separate from execution: only
+explicit JSON command records run, and manual evidence remains outstanding until
+reviewed. Failed checks cannot become successful completion evidence.
 
 See `goal-orchestrator/README.md` and `goal-orchestrator/GUIDE.md` for the operational rules.
 
@@ -472,9 +478,9 @@ Plugins can be installed at three scopes:
 - Enables incremental workflows and iteration
 
 ### 5. Platform Adaptation
-- Skills are Codex-first, with a Claude Code compatibility section in SKILL.md
-- Runtime-specific goal and agent controls are translated per host
-- No tool-name mapping table exists; runtime-specific controls are translated per host in SKILL.md
+- Goal Orchestrator keeps one shared planning skill and bundled references for Codex, Claude Code, and Kimi Code.
+- Each reference defines invocation, capability checks, launch/status/stop controls, delegation, and recovery for that host.
+- Capability absence produces an explicit handover or unsupported result. Codex's blocked-turn rule, Claude's transcript evaluator, and Kimi's queued goals stay in their respective references.
 
 ## Dependencies
 

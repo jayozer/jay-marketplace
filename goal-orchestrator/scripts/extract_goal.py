@@ -10,15 +10,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
-from goal_parsing import collect_goals
+from goal_parsing import RUNTIME_SUBCOMMANDS, collect_goals
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Extract goal patterns from text or files"
+    )
+    parser.add_argument(
+        "--runtime", choices=sorted(RUNTIME_SUBCOMMANDS), default="codex",
+        help="Host whose lifecycle subcommands should be excluded (default: codex)",
     )
     parser.add_argument(
         "input",
@@ -39,7 +44,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    goals, errors = collect_goals(args.input)
+    goals, errors = collect_goals(args.input, runtime=args.runtime)
     for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)
     if errors:
@@ -90,6 +95,20 @@ def main() -> int:
                 output += f"**Legacy Turn Limit:** {goal['turn_limit']}\n\n"
             output += f"**Character Count:** {goal['character_count']}\n\n"
             output += f"**Raw Character Count:** {goal.get('raw_character_count', goal['character_count'])}\n\n"
+            span = goal["source_span"]
+            output += f"**Source:** {goal.get('source_file', goal.get('source', 'text'))}, lines {span['start_line']}-{span['end_line']}\n\n"
+            # Keep rejected source visible too; a diagnostic must not leave a
+            # shortened goal looking like the complete original submission.
+            if goal.get("diagnostics"):
+                original = goal["source_excerpt"]
+                excerpt_span = goal["source_excerpt_span"]
+                label = f"Source excerpt including rejected text (lines {excerpt_span['start_line']}-{excerpt_span['end_line']})"
+            else:
+                original = goal["raw_goal"]
+                label = "Original goal body"
+            # Longer fences also preserve Markdown containing backticks.
+            fence = '`' * max(3, max((len(m.group()) + 1 for m in re.finditer(r'`+', original)), default=3))
+            output += f"**{label}:**\n\n{fence}text\n{original}\n{fence}\n\n"
             if goal.get("diagnostics"):
                 output += "**Diagnostics:**\n"
                 for diagnostic in goal["diagnostics"]:

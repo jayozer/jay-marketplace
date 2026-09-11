@@ -119,7 +119,7 @@ Verification:
         over_analysis = analyze_goal(over_limit)
         self.assertFalse(over_analysis["within_character_limit"])
         self.assertIn(
-            "Goal body exceeds Codex's 4,000-character limit",
+            "Goal body exceeds the 4,000-character authoring limit",
             over_analysis["issues"],
         )
 
@@ -136,6 +136,10 @@ class GoalOrchestratorLaunchRoutingTests(unittest.TestCase):
         cls.skill = (
             ROOT / "skills" / "goal-orchestrator" / "SKILL.md"
         ).read_text(encoding="utf-8")
+        # These are documentation tripwires; runtime behavior is checked by the
+        # separate trace acceptance cases, not inferred from these strings.
+        for runtime in ("codex", "claude"):
+            cls.skill += (ROOT / "skills" / "goal-orchestrator" / "references" / f"{runtime}.md").read_text(encoding="utf-8")
         cls.metadata = (
             ROOT / "skills" / "goal-orchestrator" / "agents" / "openai.yaml"
         ).read_text(encoding="utf-8")

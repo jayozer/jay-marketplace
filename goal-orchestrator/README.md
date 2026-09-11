@@ -4,7 +4,7 @@
 
 > Native Codex `/goal` is the persistence and execution engine. `$goal-orchestrator` is the planner and project manager that prepares work for that engine.
 
-Supported hosts: Codex and Claude Code.
+Platform instructions: Codex, Claude Code, and Kimi Code (including Kimi K3). Runtime behavior is verified separately from local parser/package tests.
 
 ## What Goal Orchestrator Does
 
@@ -74,7 +74,7 @@ Selecting the skill by itself uses **draft mode**. It does not create a goal, ed
 
 ## The Goal Artifact
 
-The canonical Codex goal format is:
+The portable native goal format is:
 
 ```text
 /goal <specific outcome>
@@ -92,7 +92,7 @@ If blocked:
 - <report what was tried and what would unblock progress, then stop>
 ```
 
-The goal body must be no more than 4,000 characters. Put background detail in the preceding brief or a referenced file. Each verification bullet names the output that proves it, because the native checker judges only what the conversation shows. In Codex a textual turn cap is not required; supply a native token budget only when the user explicitly asks for one. In Claude Code, offer an optional `or stop after N turns` clause, and treat a stop at the cap as unsuccessful, not complete.
+The goal body must be no more than 4,000 characters. Put background detail in the preceding brief or a referenced file. Each verification bullet names the output that proves it. Claude’s evaluator needs that evidence in the conversation; Codex and Kimi also need a reviewable completion record. Use the selected runtime reference for budgets, stops, and user controls. A limit reached is unfinished work.
 
 ## Codex Goal Lifecycle
 
@@ -104,7 +104,7 @@ The goal body must be no more than 4,000 characters. Put background detail in th
 
 An active Goal blocks another Goal in the same task, not a Goal in a separate task. Goal mode keeps the task's existing sandbox and approval policy. It can still pause for user input, approval, or missing authority. Completing a goal requires real verification; passing tests alone is insufficient when they do not prove the requested behavior.
 
-Verified against Codex 0.151.0 and Claude Code 2.1.263 on 2026-09-07; re-check after upgrading.
+The bundled [runtime references](skills/goal-orchestrator/SKILL.md#select-the-runtime) carry source links and their last-checked date (2026-09-10). Current host tools and state must still be checked before each launch.
 
 ## Delegation Rules
 
@@ -114,90 +114,152 @@ Avoid multiple agents writing to the same checkout. Prefer one implementation ow
 
 ## Contents
 
-- `skills/goal-orchestrator/` — the Codex-first skill and UI metadata.
+- `skills/goal-orchestrator/` — the shared skill, UI metadata, and bundled runtime, artifact, and verification references.
 - `examples/goal-templates/` — feature, bug-fix, test, documentation, and refactor goal patterns.
 - `examples/brief-templates/` — domain-specific brief prompts.
 - `examples/subgoal-patterns/` — decomposition patterns for independent work.
-- `scripts/generate_brief.py` — generate a structured brief from local project context.
+- `scripts/generate_brief.py` — generate a draft metadata scaffold; Git state and actual verification still need discovery.
 - `scripts/extract_goal.py` — extract canonical and legacy goal blocks.
 - `scripts/benchmark_goals.py` — check goal structure, verification, and character limits.
 - `scripts/validate_skills.py` — validate skill metadata and required sections.
 - `GUIDE.md` — detailed authoring, lifecycle, delegation, and troubleshooting guidance.
 - `evals/` — behavioral acceptance cases for `claude plugin eval` (early access); see `evals/README.md`.
 
-## Install for Codex
+## Install and confirm discovery
 
-Codex discovers personal skills under `~/.agents/skills`:
+Run these copy commands from `goal-orchestrator/` in this checkout. Copy the entire
+skill directory so its `references/` and UI metadata travel with it.
 
-```bash
-mkdir -p ~/.agents/skills && cp -R skills/goal-orchestrator ~/.agents/skills/
+| Host/install | Destination | Invoke and check discovery |
+| --- | --- | --- |
+| Codex personal | `~/.agents/skills/goal-orchestrator` | Skills UI or `/skills`; `$goal-orchestrator` |
+| Codex project | `.agents/skills/goal-orchestrator` in the target repo | Same, from the target repo |
+| Claude personal | `~/.claude/skills/goal-orchestrator` | Slash-command list; `/goal-orchestrator` |
+| Claude project | `.claude/skills/goal-orchestrator` | Same, from the target repo |
+| Claude plugin | `/plugin install goal-orchestrator@jay-marketplace` | `/goal-orchestrator:goal-orchestrator` |
+| Kimi personal | `~/.agents/skills/goal-orchestrator` or `~/.kimi-code/skills/goal-orchestrator` | New session, `/skill:goal-orchestrator` |
+| Kimi project | `.agents/skills/goal-orchestrator` or `.kimi-code/skills/goal-orchestrator` | Same, from the target repo |
+
+Personal installation shared by Codex and Kimi:
+
+```sh
+mkdir -p ~/.agents/skills
+cp -R skills/goal-orchestrator ~/.agents/skills/
 ```
 
-`$CODEX_HOME/skills` (normally `~/.codex/skills`) is a supported alternative that Codex's own skill installer still uses:
+For a repository-scoped shared copy:
 
-```bash
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-cp -R skills/goal-orchestrator "${CODEX_HOME:-$HOME/.codex}/skills/"
-```
-
-For a repository-scoped skill shared with the project:
-
-```bash
+```sh
 mkdir -p /path/to/repo/.agents/skills
 cp -R skills/goal-orchestrator /path/to/repo/.agents/skills/
 ```
 
-Use the Skills UI, `/skills`, or a `$goal-orchestrator` mention to confirm discovery. Codex normally detects skill changes automatically; restart it if an update does not appear.
+For Claude Code:
 
-## Claude Code Compatibility
-
-The skill retains a small Claude Code compatibility layer for the shared brief, safety, delegation, and verification workflow. In Claude Code the model cannot create a goal: `/goal <condition>` is a user command, so a run is a handover of the exact `/goal` text, and the checker judges only what the conversation shows. Use current Claude Code documentation for its native goal and agent controls; do not project Codex lifecycle details onto Claude Code.
-
-Invoke it as `/goal-orchestrator:goal-orchestrator` after a marketplace install, or `/goal-orchestrator` after the manual copy below:
-
-```bash
+```sh
 mkdir -p ~/.claude/skills
 cp -R skills/goal-orchestrator ~/.claude/skills/
 ```
 
-## Helper Commands
+Existing Codex installations may use `$CODEX_HOME/skills` (normally
+`~/.codex/skills`). Kimi's host-specific user directory follows `KIMI_CODE_HOME`.
+Use one installed copy per scope to avoid version ambiguity. Check discovery after
+copying; restart the host if changes do not appear. The local package check below
+verifies a complete copy, but does not prove discovery or Goal activation in each app.
 
-Generate a brief:
+## Platform instructions
 
-```bash
+Load only the matching reference:
+
+- [Codex](skills/goal-orchestrator/references/codex.md): native tool preflight, active-goal conflicts, current/new-task activation, budgets, and blocked-state rules.
+- [Claude Code](skills/goal-orchestrator/references/claude.md): user-command handover, transcript evidence, replacement, hooks/trust, and textual stops.
+- [Kimi Code](skills/goal-orchestrator/references/kimi.md): status/pause/resume/cancel/replace/next, queues, prompt-mode outcomes, and skill discovery.
+
+If the runtime or required capabilities are unavailable, return the prepared
+artifact and state that it was not launched. Keep the requested destination and
+permission mode. For Claude and Kimi, printing `/goal` is a handover; it cannot
+establish an active goal. A model name never selects the host adapter.
+
+## Helper commands
+
+Helpers use Python 3.10 or newer and the standard library. `generate_brief.py`
+reads README/package metadata only (Python 3.11+ also reads `pyproject.toml`). Its
+output labels itself a draft scaffold and includes provenance, unresolved
+decisions, acceptance-to-evidence mapping, and iteration/stopping records.
+
+```sh
 python3 scripts/generate_brief.py /path/to/project --task "Implement password reset"
-```
-
-Extract goals:
-
-```bash
-python3 scripts/extract_goal.py examples/goal-templates
 python3 scripts/extract_goal.py /path/to/goal.md
+python3 scripts/extract_goal.py /path/to/kimi-history.md --runtime kimi
+python3 scripts/benchmark_goals.py examples/goal-templates --mode template
+python3 scripts/benchmark_goals.py /path/to/goal.md --mode readiness
 ```
 
-Benchmark goals without running their verification commands:
+Extraction preserves `raw_goal`, its source span and character count, and the
+source excerpt around a rejected block. Unsupported formatting produces a
+location diagnostic and nonzero exit. `--runtime` selects Codex (default), Claude,
+or Kimi lifecycle filtering; extraction does not launch or manage goals.
 
-```bash
-python3 scripts/benchmark_goals.py examples/goal-templates
+To run a check, declare it explicitly in a `Verification:` bullet:
+
+```text
+- Command: {"command": "python3 -m unittest discover -s tests", "cwd": ".", "expected_exit": 0, "evidence": "show the unittest summary"}
+- File: Inspect `setup.sh`; cite the relevant lines without running it.
+- Manual: Compare the rendered page with the approved screenshot and record differences.
 ```
 
-Running extracted commands is opt-in and executes shell content from the input. `--test-commands` alone prints the extracted command list and runs nothing; add `--yes` to execute. `--timeout SECONDS` (default 30) bounds each command, and `--strict` turns unresolved placeholders such as `[TEST COMMAND]`, `<command>`, `{name}`, or `$NAME` in the verification and completion criteria into issues:
+See the [record schema and verdicts](skills/goal-orchestrator/references/verification.md)
+and [complete example](examples/verification-goal.md). All records are required.
+Commands execute exactly as written, subject to current authorization. Relative
+working directories resolve from the goal file, or from the explicit `--cwd`
+base. The full source/command/directory plan is printed before execution.
 
-```bash
-python3 scripts/benchmark_goals.py goal.md --test-commands --yes --cwd /path/to/project
+```sh
+# Preview only, exit 3 while executable/manual evidence is pending.
+python3 scripts/benchmark_goals.py /path/to/goal.md --test-commands --cwd /path/to/project
+
+# Run only explicit records after readiness checks pass.
+python3 scripts/benchmark_goals.py /path/to/goal.md --test-commands --yes --cwd /path/to/project --timeout 30
 ```
+
+Legacy prose extraction is retained as `legacy_command_suggestions` for migration.
+It never supplies executable checks, even with `--yes`. Backticked file names and
+prose such as "shows" or "passes" cannot authorize execution. Convert only intended
+commands to records, preserving the command and working directory; mark inspections
+and human criteria separately.
+
+| Result | Exit | Meaning |
+| --- | --- | --- |
+| `STRUCTURE_ONLY` | 0 | Template lint passed; no commands ran |
+| `READY` | 0 | Detected placeholders/decisions resolved; verification remains unrun |
+| `PASS` | 0 | Explicit executable checks passed, no pending manual evidence |
+| `FAIL` | 1 | Input, structure, readiness, or executable checks failed |
+| `NO_GOALS` | 2 | Nothing to benchmark |
+| `PENDING` / `MANUAL` | 3 | Executable or human evidence remains outstanding |
+| `EMPTY_ALLOWED` | 0 | Empty input explicitly accepted with `--allow-empty` |
+
+`--strict` aliases readiness mode. `--test-commands` always requires readiness and
+cannot be combined with template mode. A nonzero expected status is accepted only
+when declared; missing executables, timeout, and launch failures still fail. A
+readiness or template success never proves goal completion. Human evidence is
+recorded by the coordinator outside this helper; it is never silently dismissed.
 
 ## Validate Goal Orchestrator
 
-Requires Python 3.10 or newer. From `goal-orchestrator/`:
+Only the metadata/content validator needs PyYAML. Use an isolated environment;
+these checks do not invoke paid models or launch native goals:
 
-```bash
-pip install -r requirements-dev.txt
-python3 scripts/validate_skills.py
-python3 scripts/validate_skills.py --check-content
+```sh
+uv run --with pyyaml python scripts/validate_skills.py --check-content
 bash scripts/smoke_test.sh
 ```
 
-On Homebrew Python, `pip install -r requirements-dev.txt` fails with a PEP 668 externally-managed error; use a virtual environment instead. When PyYAML is missing, `smoke_test.sh` falls back to `uv run --with pyyaml` automatically (`uv` must be on PATH). `scripts/` and `examples/` are plugin-level authoring and verification tools; the skill directory ships only `SKILL.md` and `agents/openai.yaml`.
+Alternatively, install `requirements-dev.txt` into a virtual environment. The smoke
+suite uses `uv --with pyyaml` if the active Python lacks PyYAML. It checks unit
+regressions, explicit execution and failure verdicts, template structure, lifecycle
+filtering, and a standalone copy's bundled links.
 
-See [GUIDE.md](GUIDE.md) for detailed goal authoring, approval boundaries, delegation patterns, and troubleshooting.
+[Behavioral acceptance cases](evals/README.md) cover simulated host decisions and
+optional Claude model-backed evals. Local and simulated checks are separate from
+host discovery, real Codex/Claude/Kimi launches, and model success-rate evidence.
+See [GUIDE.md](GUIDE.md) for workflow examples.

@@ -1,0 +1,377 @@
+[
+  {
+    "case_id": "current-launch",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      },
+      {
+        "tool": "create_goal",
+        "arguments": {
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      },
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      }
+    ],
+    "final": {
+      "state": "active",
+      "destination": "current"
+    },
+    "response": "Codex native Goal is active in this task: the post-launch get_goal returned active with the matching objective. No token budget was requested or applied.\n\nWorkspace: /fixture/repo, branch fixture, commit abc123; preserve the existing notes.txt change.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nFile implementation and completion evidence remain outstanding; the available tools establish launch only."
+  },
+  {
+    "case_id": "draft-only",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      }
+    ],
+    "final": {
+      "state": "draft",
+      "destination": "current"
+    },
+    "response": "Draft prepared; nothing was started or implemented. The current task has no existing Goal.\n\nOutcome: result.txt contains ready.\nContext: /fixture/repo, branch fixture, commit abc123; existing dirty file notes.txt.\nOutput: result.txt with the required content.\nBoundaries: preserve notes.txt and existing work; no commits or external actions.\nVerification: read result.txt and show that its content is ready.\nSuitability: bounded, authorized for the stated mode, and verifiable by the file contents.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nRuntime: Codex. Destination: current task. Budget: none."
+  },
+  {
+    "case_id": "plan-mode",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      }
+    ],
+    "final": {
+      "state": "draft",
+      "destination": "current"
+    },
+    "response": "The host is in Plan mode, so the goal remains a draft. The current task has no existing Goal.\n\nOutcome: result.txt contains ready.\nContext: /fixture/repo, branch fixture, commit abc123; existing dirty file notes.txt.\nOutput: result.txt with the required content.\nBoundaries: preserve notes.txt and existing work; no commits or external actions.\nVerification: read result.txt and show that its content is ready.\nSuitability: bounded, authorized for the stated mode, and verifiable by the file contents.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nRuntime: Codex. Destination: current task. Budget: none. Execution requires leaving Plan mode."
+  },
+  {
+    "case_id": "active-conflict",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      }
+    ],
+    "final": {
+      "state": "conflict",
+      "destination": "current"
+    },
+    "response": "The current Codex task already has an unfinished Goal: “Finish the unrelated migration.” I preserved it and did not launch the requested Goal.\n\nWorkspace: /fixture/repo, branch fixture, commit abc123; preserve the existing notes.txt change.\n\nRequested goal:\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nBudget: none. How should I handle the existing Goal before starting this one?"
+  },
+  {
+    "case_id": "tools-unavailable",
+    "calls": [],
+    "final": {
+      "state": "handover",
+      "destination": "current"
+    },
+    "response": "Not launched: Codex Goal tools are unavailable, so I cannot inspect, create, or confirm a native Goal in this task. This is a user handover.\n\nOutcome: result.txt contains ready.\nContext: /fixture/repo, branch fixture, commit abc123; existing dirty file notes.txt.\nOutput: result.txt with the required content.\nBoundaries: preserve notes.txt and existing work; no commits or external actions.\nVerification: read result.txt and show that its content is ready.\nSuitability: bounded, authorized for the stated mode, and verifiable by the file contents.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nBudget: none. Inspect existing Goal state before submitting this command, and preserve any unfinished Goal."
+  },
+  {
+    "case_id": "creation-failed",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      },
+      {
+        "tool": "create_goal",
+        "arguments": {
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      }
+    ],
+    "final": {
+      "state": "failed",
+      "destination": "current"
+    },
+    "response": "Codex Goal creation failed with “creation unavailable.” The preflight found no Goal, and no post-launch active state was available. I did not retry or mark anything complete.\n\nWorkspace: /fixture/repo, branch fixture, commit abc123; preserve the existing notes.txt change.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nDestination: current task. Budget: none. File work and verification remain. Restore the Goal creation capability and inspect current state before another launch attempt."
+  },
+  {
+    "case_id": "activation-mismatch",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      },
+      {
+        "tool": "create_goal",
+        "arguments": {
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      },
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      }
+    ],
+    "final": {
+      "state": "conflict",
+      "destination": "current"
+    },
+    "response": "Launch verification found a conflict: get_goal reports an active Goal with “A different objective.” The requested Goal is not verified active. I preserved that state without replacing or clearing it.\n\nWorkspace: /fixture/repo, branch fixture, commit abc123; preserve the existing notes.txt change.\n\nRequested goal:\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nRuntime: Codex. Destination: current task. Budget: none. How should I handle the conflicting Goal?"
+  },
+  {
+    "case_id": "budget-requested",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      },
+      {
+        "tool": "create_goal",
+        "arguments": {
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.",
+          "token_budget": 12000
+        }
+      },
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      }
+    ],
+    "final": {
+      "state": "active",
+      "destination": "current",
+      "budget": 12000
+    },
+    "response": "Codex native Goal is active in this task. The post-launch get_goal confirmed the matching objective and the applied native token budget of 12,000.\n\nWorkspace: /fixture/repo, branch fixture, commit abc123; preserve the existing notes.txt change.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nFile implementation and completion evidence remain outstanding; this confirms launch only."
+  },
+  {
+    "case_id": "new-task-pending",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      },
+      {
+        "tool": "list_projects",
+        "arguments": {}
+      },
+      {
+        "tool": "create_thread",
+        "arguments": {
+          "prompt": "Run the already approved goal using the current task as its destination.\n\nOutcome: result.txt contains ready.\nContext: /fixture/repo, branch fixture, commit abc123; existing dirty file notes.txt.\nOutput: result.txt with the required content.\nBoundaries: preserve notes.txt and existing work; no commits or external actions.\nVerification: read result.txt and show that its content is ready.\nSuitability: bounded, authorized for the stated mode, and verifiable by the file contents.\n\nThe context above describes the source workspace. Confirm this destination worktree's path, branch/ref, commit, and existing dirty paths before launching. Preserve existing work.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nYou are already the destination task created by Goal Orchestrator.\nLaunch the native Goal in this task. Do not create another task.\n\nCheck that get_goal, create_goal, and update_goal are available in this task. Inspect your own Goal state with get_goal and preserve and report any unfinished Goal conflict. If the capabilities and state permit launch, call create_goal with the Goal body above without the /goal prefix. No native token budget was requested; omit token_budget. Then call get_goal again and report active only if the stored objective matches. Report your real task identity, workspace/ref, native Goal state, and budget observation. If tools or activation are unavailable, pending, or failed, report that state and provide a handover; do not invent success.",
+          "target": {
+            "type": "project",
+            "projectId": "project-1",
+            "environment": {
+              "type": "worktree"
+            }
+          }
+        }
+      }
+    ],
+    "final": {
+      "state": "pending",
+      "destination": "new"
+    },
+    "response": "New-task setup is pending. create_thread returned only the temporary clientThreadId pending-1; no tool is available to resolve a real task ID or observe native Goal activation. No active Goal is claimed.\n\nThe parent Goal “Keep the parent goal.” remains untouched. Workspace: /fixture/repo, branch fixture, commit abc123; preserve the existing notes.txt change.\n\nRuntime: Codex. Destination: requested new worktree task, real ID pending. Budget: none.\n\nThe pending task received this copy-ready launch prompt:\n\nRun the already approved goal using the current task as its destination.\n\nOutcome: result.txt contains ready.\nContext: /fixture/repo, branch fixture, commit abc123; existing dirty file notes.txt.\nOutput: result.txt with the required content.\nBoundaries: preserve notes.txt and existing work; no commits or external actions.\nVerification: read result.txt and show that its content is ready.\nSuitability: bounded, authorized for the stated mode, and verifiable by the file contents.\n\nThe context above describes the source workspace. Confirm this destination worktree's path, branch/ref, commit, and existing dirty paths before launching. Preserve existing work.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nYou are already the destination task created by Goal Orchestrator.\nLaunch the native Goal in this task. Do not create another task.\n\nCheck that get_goal, create_goal, and update_goal are available in this task. Inspect your own Goal state with get_goal and preserve and report any unfinished Goal conflict. If the capabilities and state permit launch, call create_goal with the Goal body above without the /goal prefix. No native token budget was requested; omit token_budget. Then call get_goal again and report active only if the stored objective matches. Report your real task identity, workspace/ref, native Goal state, and budget observation. If tools or activation are unavailable, pending, or failed, report that state and provide a handover; do not invent success."
+  },
+  {
+    "case_id": "new-task-activated",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      },
+      {
+        "tool": "list_projects",
+        "arguments": {}
+      },
+      {
+        "tool": "create_thread",
+        "arguments": {
+          "prompt": "Run the already approved goal using the current task as its destination.\n\nOutcome: result.txt contains ready.\nContext: /fixture/repo, branch fixture, commit abc123; existing dirty file notes.txt.\nOutput: result.txt with the required content.\nBoundaries: preserve notes.txt and existing work; no commits or external actions.\nVerification: read result.txt and show that its content is ready.\nSuitability: bounded, authorized for the stated mode, and verifiable by the file contents.\n\nThe context above describes the source workspace. Confirm this destination worktree's path, branch/ref, commit, and existing dirty paths before launching. Preserve existing work.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nYou are already the destination task created by Goal Orchestrator.\nLaunch the native Goal in this task. Do not create another task.\n\nCheck that get_goal, create_goal, and update_goal are available in this task. Inspect your own Goal state with get_goal and preserve and report any unfinished Goal conflict. If the capabilities and state permit launch, call create_goal with the Goal body above without the /goal prefix. No native token budget was requested; omit token_budget. Then call get_goal again and report active only if the stored objective matches. Report your real task identity, workspace/ref, native Goal state, and budget observation. If tools or activation are unavailable, pending, or failed, report that state and provide a handover; do not invent success.",
+          "target": {
+            "type": "project",
+            "projectId": "project-1",
+            "environment": {
+              "type": "worktree"
+            }
+          }
+        }
+      },
+      {
+        "tool": "list_threads",
+        "arguments": {
+          "limit": 20
+        }
+      },
+      {
+        "tool": "wait_threads",
+        "arguments": {
+          "targets": [
+            {
+              "threadId": "child-1",
+              "hostId": "local"
+            }
+          ],
+          "timeoutMs": 0
+        }
+      }
+    ],
+    "final": {
+      "state": "active",
+      "destination": "child-1"
+    },
+    "response": "Codex native Goal is active in new task child-1 on local. list_threads resolved pending-1 to that real task, and wait_threads confirmed an active Goal with the matching objective.\n\nThe parent Goal “Keep the parent goal.” remains untouched. Workspace: /fixture/repo, branch fixture, commit abc123; preserve the existing notes.txt change. The new task uses the saved Git project’s default worktree setup; its own path, branch, and commit were not included in the returned status.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nBudget: none. Completion has not been verified."
+  },
+  {
+    "case_id": "new-task-failed",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      },
+      {
+        "tool": "list_projects",
+        "arguments": {}
+      },
+      {
+        "tool": "create_thread",
+        "arguments": {
+          "prompt": "Run the already approved goal using the current task as its destination.\n\nOutcome: result.txt contains ready.\nContext: /fixture/repo, branch fixture, commit abc123; existing dirty file notes.txt.\nOutput: result.txt with the required content.\nBoundaries: preserve notes.txt and existing work; no commits or external actions.\nVerification: read result.txt and show that its content is ready.\nSuitability: bounded, authorized for the stated mode, and verifiable by the file contents.\n\nThe context above describes the source workspace. Confirm this destination worktree's path, branch/ref, commit, and existing dirty paths before launching. Preserve existing work.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nYou are already the destination task created by Goal Orchestrator.\nLaunch the native Goal in this task. Do not create another task.\n\nCheck that get_goal, create_goal, and update_goal are available in this task. Inspect your own Goal state with get_goal and preserve and report any unfinished Goal conflict. If the capabilities and state permit launch, call create_goal with the Goal body above without the /goal prefix. No native token budget was requested; omit token_budget. Then call get_goal again and report active only if the stored objective matches. Report your real task identity, workspace/ref, native Goal state, and budget observation. If tools or activation are unavailable, pending, or failed, report that state and provide a handover; do not invent success.",
+          "target": {
+            "type": "project",
+            "projectId": "project-1",
+            "environment": {
+              "type": "worktree"
+            }
+          }
+        }
+      }
+    ],
+    "final": {
+      "state": "failed",
+      "destination": "new"
+    },
+    "response": "New-task creation failed: “worktree setup failed.” No task identity or native Goal activation was established, and I did not retry or launch in the parent. The parent Goal “Keep the parent goal.” remains untouched.\n\nWorkspace: /fixture/repo, branch fixture, commit abc123; preserve the existing notes.txt change.\n\nRuntime: Codex. Destination: requested new task, not created. Budget: none. File work and verification remain. Resolve the worktree setup failure before another attempt.\n\nCopy-ready destination prompt:\n\nRun the already approved goal using the current task as its destination.\n\nOutcome: result.txt contains ready.\nContext: /fixture/repo, branch fixture, commit abc123; existing dirty file notes.txt.\nOutput: result.txt with the required content.\nBoundaries: preserve notes.txt and existing work; no commits or external actions.\nVerification: read result.txt and show that its content is ready.\nSuitability: bounded, authorized for the stated mode, and verifiable by the file contents.\n\nThe context above describes the source workspace. Confirm this destination worktree's path, branch/ref, commit, and existing dirty paths before launching. Preserve existing work.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nYou are already the destination task created by Goal Orchestrator.\nLaunch the native Goal in this task. Do not create another task.\n\nCheck that get_goal, create_goal, and update_goal are available in this task. Inspect your own Goal state with get_goal and preserve and report any unfinished Goal conflict. If the capabilities and state permit launch, call create_goal with the Goal body above without the /goal prefix. No native token budget was requested; omit token_budget. Then call get_goal again and report active only if the stored objective matches. Report your real task identity, workspace/ref, native Goal state, and budget observation. If tools or activation are unavailable, pending, or failed, report that state and provide a handover; do not invent success."
+  },
+  {
+    "case_id": "destination-no-recursion",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      },
+      {
+        "tool": "create_goal",
+        "arguments": {
+          "objective": "Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt."
+        }
+      },
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      }
+    ],
+    "final": {
+      "state": "active",
+      "destination": "current"
+    },
+    "response": "Codex native Goal is active here in the destination task; no additional task was created. The post-launch get_goal returned active with the matching objective.\n\nWorkspace: /fixture/repo, branch fixture, commit abc123; preserve the existing notes.txt change.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nBudget: none. File implementation and completion evidence remain outstanding."
+  },
+  {
+    "case_id": "completion-evidence",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      },
+      {
+        "tool": "run_check",
+        "arguments": {
+          "id": "suite"
+        }
+      },
+      {
+        "tool": "review_artifact",
+        "arguments": {
+          "id": "artifact"
+        }
+      },
+      {
+        "tool": "update_goal",
+        "arguments": {
+          "status": "complete"
+        }
+      }
+    ],
+    "final": {
+      "state": "complete",
+      "destination": "current"
+    },
+    "response": "The matching active Codex Goal is now complete. The required suite returned exit 0 with “OK: 2 tests”; the artifact review returned a match and “result.txt: ready.” update_goal confirmed complete.\n\nWorkspace: /fixture/repo, branch fixture, commit abc123; preserve the existing notes.txt change. Verification made no edits. Destination: current task. No token budget was requested."
+  },
+  {
+    "case_id": "completion-failed-check",
+    "calls": [
+      {
+        "tool": "get_goal",
+        "arguments": {}
+      },
+      {
+        "tool": "run_check",
+        "arguments": {
+          "id": "suite"
+        }
+      },
+      {
+        "tool": "review_artifact",
+        "arguments": {
+          "id": "artifact"
+        }
+      }
+    ],
+    "final": {
+      "state": "unfinished",
+      "destination": "current"
+    },
+    "response": "The Goal remains unfinished and active. The artifact matches (“result.txt: ready”), but the required suite failed with exit 1 and “FAILED: 1 test.” I did not mark the Goal complete or blocked.\n\nWorkspace: /fixture/repo, branch fixture, commit abc123; preserve the existing notes.txt change. Verification made no edits. Destination: current Codex task. Budget: none.\n\nNext: inspect and repair the failing test, then rerun the suite and file review. The supplied tools provide no repair action or further diagnostic output."
+  },
+  {
+    "case_id": "claude-handover",
+    "calls": [],
+    "final": {
+      "state": "handover",
+      "destination": "current"
+    },
+    "response": "Not launched: Claude Code has no documented callable Goal tool. Current Goal state is already known to be empty, so this command is ready for user submission in the current session.\n\nOutcome: result.txt contains ready.\nContext: /fixture/repo, branch fixture, commit abc123; existing dirty file notes.txt.\nOutput: result.txt with the required content.\nBoundaries: preserve notes.txt and existing work; no commits or external actions.\nVerification: read result.txt and show that its content is ready.\nSuitability: bounded, authorized for the stated mode, and verifiable by the file contents.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nBudget: none. Existing permission policy still applies; displaying this command does not activate a Goal."
+  },
+  {
+    "case_id": "claude-budget",
+    "calls": [],
+    "final": {
+      "state": "handover",
+      "destination": "current",
+      "budget": null
+    },
+    "response": "Not launched: Claude Code has no documented callable Goal tool and does not support Codex’s native token_budget argument. The requested 12,000-token cap was not applied. Current Goal state is already known to be empty.\n\nOutcome: result.txt contains ready.\nContext: /fixture/repo, branch fixture, commit abc123; existing dirty file notes.txt.\nOutput: result.txt with the required content.\nBoundaries: preserve notes.txt and existing work; no commits or external actions.\nVerification: read result.txt and show that its content is ready.\nSuitability: bounded, authorized for the stated mode, and verifiable by the file contents.\n\nPrepared goal text:\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nDestination: current Claude Code session, by user handover. Submitting this text will not enforce the requested token cap. A supported turn or time stop condition needs to be chosen before proceeding with capped execution."
+  },
+  {
+    "case_id": "kimi-handover",
+    "calls": [],
+    "final": {
+      "state": "handover",
+      "destination": "current"
+    },
+    "response": "Not launched: user command required. Kimi Code exposes no callable launch/status interface here, and current Goal state is already known to be empty. Submit this command in the current Kimi Code session when ready.\n\nOutcome: result.txt contains ready.\nContext: /fixture/repo, branch fixture, commit abc123; existing dirty file notes.txt.\nOutput: result.txt with the required content.\nBoundaries: preserve notes.txt and existing work; no commits or external actions.\nVerification: read result.txt and show that its content is ready.\nSuitability: bounded, authorized for the stated mode, and verifiable by the file contents.\n\n/goal Make result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nBudget: none. Existing permissions remain in effect; the command has only been prepared."
+  },
+  {
+    "case_id": "kimi-next-without-active-goal",
+    "calls": [],
+    "final": {
+      "state": "draft",
+      "destination": "current"
+    },
+    "response": "I kept this as a draft. In Kimi Code, /goal next starts immediately when no Goal is active, so using it would conflict with your instruction not to start work now. Nothing has been queued or launched.\n\nOutcome: result.txt contains ready.\nContext: /fixture/repo, branch fixture, commit abc123; existing dirty file notes.txt.\nOutput: result.txt with the required content.\nBoundaries: preserve notes.txt and existing work; no commits or external actions.\nVerification: read result.txt and show that its content is ready.\nSuitability: bounded, authorized for the stated mode, and verifiable by the file contents.\n\nDraft objective:\nMake result.txt contain ready. Done only when the file content is ready, proven by reading result.txt.\n\nDestination: current Kimi Code session when you choose to start. Budget: none. Retain this draft until then."
+  }
+]

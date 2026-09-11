@@ -31,6 +31,10 @@ jobs:
         run: |
           PYTHONDONTWRITEBYTECODE=1 uv run --quiet --with pyyaml python goal-orchestrator/scripts/validate_skills.py --check-content
 
+      - name: Validate saved simulated runtime traces
+        run: |
+          PYTHONDONTWRITEBYTECODE=1 python3 goal-orchestrator/scripts/grade_runtime_trace.py goal-orchestrator/evals/fixtures/runtime-traces/forward-2026-09-10.json
+
       - name: Smoke suite
         run: |
           PYTHONDONTWRITEBYTECODE=1 bash goal-orchestrator/scripts/smoke_test.sh
@@ -46,12 +50,3 @@ jobs:
         run: |
           claude plugin validate .
           claude plugin validate ./goal-orchestrator
-
-      - name: Scope sweep (no unsupported-host mentions outside reviews/)
-        run: |
-          # Pattern below is split across quotes so this sweep line never matches itself.
-          set +e
-          grep -rin 'ki''mi' --exclude-dir=reviews --exclude-dir=.git --include='*.md' --include='*.py' --include='*.sh' --include='*.json' --include='*.yaml' --include='*.yml' .
-          status=$?
-          set -e
-          [ "$status" -eq 1 ]
