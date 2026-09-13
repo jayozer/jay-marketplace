@@ -11,11 +11,33 @@ Prepare bounded work for the current app's native Goal feature. Codex is the pri
 
 Inspect the workspace, applicable instructions, implementation, and available goal state. Resolve facts locally before asking about intent, authority, or material tradeoffs. Preserve existing work.
 
+### Choose how decisions are made
+
+- **Guided (default):** Inspect first, then ask about unresolved decisions that materially affect architecture, product direction, scope, compatibility, or the finish line. Offer a recommendation and explain the meaningful tradeoff when evidence supports one. If the request is already sufficiently defined, proceed without an interview.
+- **Autonomous (explicit preference):** Choose reasonable implementation defaults within the user's outcome and boundaries. Record consequential assumptions and why they fit the workspace. Ask only when missing information or authority prevents responsible progress; do not infer permission for a product-scope change or an external action from the route name.
+
+Use the user's route preference from this conversation; otherwise use Guided. `Guided:` and `Autonomous:` are ordinary prompt labels, not slash commands or native Goal controls. Natural language such as "ask me about the architecture first" or "choose implementation details yourself" also selects the route. State the selected route and execution mode briefly with the brief; do not ask the user to select a route when their preference or the default is sufficient.
+
+In Guided, ask a small batch of high-impact questions using the host's supported question interface or concise prose. Ask only what remains unresolved after inspection and prior conversation: desired user outcome, architectural direction, tradeoffs, compatibility, or decisive acceptance evidence. Do not repeat settled questions, ask for facts available locally, or force a fixed questionnaire. Distinguish a required decision from an optional preference. For optional preferences, allow a reasonable opportunity to answer and then proceed with a stated default; an unanswered required decision remains unresolved. Continue independent authorized work while waiting.
+
+### Choose whether execution is authorized
+
+The route controls decision-making; draft/run mode controls execution. Choosing Autonomous alone does not authorize implementation, goal creation, delegation, or a new task.
+
 - **Draft mode (default):** Return a brief, suitability decision, and proposed goal. Skill selection alone does not authorize implementation, goal creation, or delegation.
 - **Run mode (explicit only):** Use when the user asks to start, run, execute, or pursue this goal now. Carry existing authorization forward without demanding approval again for the same work.
 - **Supervised fallback:** When the goal is not verifiable, authorized, or bounded, propose a supervised path in draft mode; in explicit run mode do the authorized portion and stop at unresolved decisions.
 
 Remain in draft mode when the current host is in Plan mode or otherwise forbids execution.
+
+| Request | Route and execution |
+| --- | --- |
+| Bare skill invocation or "help me define this" | Guided + draft |
+| "Autonomous: draft a goal; choose the approach yourself" | Autonomous + draft |
+| "Guided: resolve the architecture questions, then run it" | Guided + run; resolve required decisions before dependent work, then use existing launch authority |
+| "Autonomous: define and run this goal" | Autonomous + run within the stated boundaries |
+
+Route changes preserve agreed decisions, scope, destination, budget, and prior execution authority. "Let's discuss storage before continuing" switches to Guided for that decision and holds dependent work; it does not silently pause or edit native Goal state. "Choose the remaining details yourself" switches to Autonomous but does not launch a draft. "Those decisions are settled; run autonomously from here" also authorizes execution. If the Goal is already active, continue that Goal; use the host's lifecycle rules for any user-requested objective or state change instead of creating a replacement.
 
 ### Select the runtime
 
@@ -42,6 +64,8 @@ Verification: [each acceptance criterion mapped to decisive evidence]
 ```
 
 Record workspace/ref, source dates, assumptions, unresolved decisions, and an iteration policy when they affect the work. Use the [brief and evidence record](references/artifacts.md) when a run spans multiple attempts. The metadata brief generator is a draft scaffold; the orchestrator still inspects Git state, applicable instructions, and actual verification scripts.
+
+Record consequential decisions with their rationale and whether the user selected them or the agent assumed them. Update the brief and proposed goal when answers change the approach; preserve settled decisions so a later route change does not restart discovery.
 
 Treat commits, pushes, pull requests, deployment, credential use, purchases, destructive actions, and external messages as separate authority unless included in the user's request. A goal does not broaden permissions.
 

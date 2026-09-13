@@ -9,19 +9,25 @@ Output:
 Boundaries:
 Verification:
 
+Working style:
+- Route: Guided or Autonomous; execution: draft or run, with the authorizing request when applicable.
+
 Provenance:
 - Workspace, branch/ref and commit; existing dirty paths and their ownership.
 - Source/document path or URL, date inspected, and what it establishes.
 - Facts still unverified or inferred.
 
 Decisions needed:
-- Choice or approval, who can resolve it, and which work depends on it.
+- Required decision or optional preference, recommendation and tradeoff, who can resolve it, and which work depends on it.
+
+Decisions and assumptions:
+- Choice, rationale and evidence; selected by the user or assumed by the agent; affected scope or checks.
 
 Acceptance -> evidence:
 - Criterion -> command/observation -> expected result -> observed result and source.
 ```
 
-Remove the decisions section once every required decision is resolved. An empty placeholder is not a recorded decision. Mark checks PASS, FAIL, MANUAL, PENDING, or SKIPPED and state what each establishes. A manual criterion is complete only when the required observation or review is recorded; the helper cannot infer that review occurred.
+Remove the "Decisions needed" section once all questions are resolved or optional preferences use a recorded default; retain settled decisions and assumptions across route changes. An empty placeholder is not a recorded decision. Mark checks PASS, FAIL, MANUAL, PENDING, or SKIPPED and state what each establishes. A manual criterion is complete only when the required observation or review is recorded; the helper cannot infer that review occurred.
 
 ## Iteration policy
 

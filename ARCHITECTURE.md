@@ -65,6 +65,10 @@ Each plugin (kit) follows this structure:
 
 **Purpose:** Turn a broad request into an execution-ready brief and a measurable native goal, launched only on explicit request and verified to completion.
 
+**Decision routes:** Guided is the default: inspect the workspace, then resolve consequential unanswered architecture, product, and acceptance decisions with the user. Autonomous delegates implementation choices within the agreed boundaries and records consequential assumptions. Both preserve settled decisions; missing required information or authority still needs input.
+
+**Execution modes:** Draft/run is separate from the decision route. Bare invocation uses Guided + draft; selecting Autonomous alone remains draft. Explicit run authority permits native launch after required decisions and host preflight are resolved. Switching routes preserves scope, destination, budgets, and any active Goal rather than creating a replacement.
+
 **Goal block:** Four sections — Done when, Constraints, Verification, If blocked — drafted by default and launched only when the user explicitly asks.
 
 **Execution:** The shared skill selects the current host and loads only its bundled [Codex](goal-orchestrator/skills/goal-orchestrator/references/codex.md), [Claude Code](goal-orchestrator/skills/goal-orchestrator/references/claude.md), or [Kimi Code](goal-orchestrator/skills/goal-orchestrator/references/kimi.md) reference. Codex can use native Goal tools after checking availability and existing state. Claude and Kimi user-command launches are handed over unless a verified callable interface exists. A matching post-launch state is required to claim activation. Sandbox and approval policy stay unchanged.
@@ -77,7 +81,7 @@ checkout. Their structure/readiness results are separate from execution: only
 explicit JSON command records run, and manual evidence remains outstanding until
 reviewed. Failed checks cannot become successful completion evidence.
 
-See `goal-orchestrator/README.md` and `goal-orchestrator/GUIDE.md` for the operational rules.
+See the [Goal Orchestrator README](goal-orchestrator/README.md) and [usage guide](goal-orchestrator/GUIDE.md#how-to-use-the-skill-in-codex) for prompts, follow-up questions, and operational rules.
 
 ### 2. Video Understanding (video-understanding-kit)
 

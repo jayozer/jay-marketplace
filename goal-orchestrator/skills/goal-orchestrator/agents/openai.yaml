@@ -1,4 +1,4 @@
 interface:
   display_name: "Goal Orchestrator"
-  short_description: "Turn broad work into a safe, verifiable Codex goal"
-  default_prompt: "Use $goal-orchestrator to turn this request into an execution-ready brief and native Codex goal, then launch it here or in a new task on explicit request."
+  short_description: "Define verifiable goals with Guided or Autonomous routes"
+  default_prompt: "Use $goal-orchestrator in Guided draft mode to inspect this request, resolve consequential decisions with me, and prepare a verifiable goal, then launch it here or in a new task on explicit request."

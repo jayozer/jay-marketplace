@@ -6,11 +6,14 @@
 
 Platform instructions: Codex, Claude Code, and Kimi Code (including Kimi K3). Runtime behavior is verified separately from local parser/package tests.
 
+**How to use:** See the [usage guide](GUIDE.md#how-to-use-the-skill-in-codex) for Guided and Autonomous prompts, follow-up questions, route switching, a draft-to-run walkthrough, native Goal commands, and optional terminal helpers.
+
 ## What Goal Orchestrator Does
 
 Use Goal Orchestrator when a request needs more structure before long-running execution. It helps Codex:
 
 - inspect the actual workspace before defining the work;
+- resolve consequential decisions with you in Guided, or choose implementation defaults within your boundaries in Autonomous;
 - turn a broad request into an execution-ready brief;
 - decide whether the task is verifiable, safe and authorized, and bounded;
 - draft a native Codex goal with measurable completion criteria;
@@ -70,7 +73,23 @@ Use $goal-orchestrator to launch this as a new Codex task.
 
 For Git projects, the new task starts in a Codex worktree by default. A requested branch/ref or the current working tree is used only when you name that starting state. A new branch is created only when you ask for that exact name. The parent task keeps any existing Goal, and the new task creates and verifies its own Goal.
 
-Selecting the skill by itself uses **draft mode**. It does not create a goal, edit files, or spawn subagents.
+### Choose Guided or Autonomous
+
+**Guided** is the default: inspect first, then ask about consequential unresolved architecture, product, and acceptance decisions, with recommendations where supported. Skip questions already answered by the workspace or conversation.
+
+**Autonomous** lets the agent choose implementation details within your boundaries and record consequential assumptions. It still asks when required information or authority is missing.
+
+```text
+$goal-orchestrator Guided: Inspect this feature request and ask about architecture and product direction before drafting the goal.
+```
+
+```text
+$goal-orchestrator Autonomous: Define and run this goal. Choose an approach consistent with the existing architecture. Preserve public APIs; do not commit, push, or deploy.
+```
+
+These labels are prompt conventions, not new commands. The route controls decisions; **draft/run** controls execution. Selecting the skill by itself uses **Guided + draft**. Selecting Autonomous alone also stays in draft mode. Neither creates a goal, implements changes, or spawns subagents without execution authority.
+
+Switch naturally with "Let's discuss this decision before continuing" or "Those decisions are settled; run autonomously from here." Preserve agreed scope and prior authorization; continue an existing Goal rather than replacing it. See the [route walkthrough](GUIDE.md#guided-or-autonomous) for questions, launch behavior, and examples.
 
 ## The Goal Artifact
 
@@ -89,7 +108,7 @@ Verification:
 - <command and the printed output that proves it, or the observation or review evidence to show>
 
 If blocked:
-- <report what was tried and what would unblock progress, then stop>
+- <report attempts, unmet criteria, and what would unblock progress; follow the host's stopping rules>
 ```
 
 The goal body must be no more than 4,000 characters. Put background detail in the preceding brief or a referenced file. Each verification bullet names the output that proves it. Claude’s evaluator needs that evidence in the conversation; Codex and Kimi also need a reviewable completion record. Use the selected runtime reference for budgets, stops, and user controls. A limit reached is unfinished work.
@@ -123,7 +142,7 @@ Avoid multiple agents writing to the same checkout. Prefer one implementation ow
 - `scripts/benchmark_goals.py` — check goal structure, verification, and character limits.
 - `scripts/validate_skills.py` — validate skill metadata and required sections.
 - `GUIDE.md` — detailed authoring, lifecycle, delegation, and troubleshooting guidance.
-- `evals/` — behavioral acceptance cases for `claude plugin eval` (early access); see `evals/README.md`.
+- `evals/` — simulated runtime traces, Guided/Autonomous conversation exercises, and optional `claude plugin eval` cases; see [evaluation coverage](evals/README.md).
 
 ## Install and confirm discovery
 
@@ -166,6 +185,18 @@ Existing Codex installations may use `$CODEX_HOME/skills` (normally
 Use one installed copy per scope to avoid version ambiguity. Check discovery after
 copying; restart the host if changes do not appear. The local package check below
 verifies a complete copy, but does not prove discovery or Goal activation in each app.
+
+### Update an existing standalone copy
+
+Updating this checkout does not update a previously copied skill. After syncing the desired source version, back up the installed `goal-orchestrator` directory outside any skill-discovery directory, then replace it with the entire `skills/goal-orchestrator` directory. Preserve any intentional local customizations in the backup before replacing them. Use the same installation scope and destination rather than creating a second copy.
+
+For the personal shared destination, verify the copy from this package directory:
+
+```sh
+diff -qr skills/goal-orchestrator ~/.agents/skills/goal-orchestrator
+```
+
+No output with exit status 0 means the directories match. Check skill discovery on the next turn; restart the host if the update does not appear. This verifies installed files, not native Goal activation. Plugin installations use the host's marketplace/plugin update workflow instead of this standalone-copy procedure.
 
 ## Platform instructions
 
@@ -259,7 +290,7 @@ suite uses `uv --with pyyaml` if the active Python lacks PyYAML. It checks unit
 regressions, explicit execution and failure verdicts, template structure, lifecycle
 filtering, and a standalone copy's bundled links.
 
-[Behavioral acceptance cases](evals/README.md) cover simulated host decisions and
-optional Claude model-backed evals. Local and simulated checks are separate from
+[Behavioral acceptance cases](evals/README.md) cover simulated host decisions,
+Guided/Autonomous conversation scenarios, and optional Claude model-backed evals. Local and simulated checks are separate from
 host discovery, real Codex/Claude/Kimi launches, and model success-rate evidence.
 See [GUIDE.md](GUIDE.md) for workflow examples.

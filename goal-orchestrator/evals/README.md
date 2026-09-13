@@ -59,6 +59,14 @@ relevant references, and raw cases. Use a disposable directory for outputs and
 forbid real host calls. Real host discovery and native activation require separate
 authorized checks with captured host state and actual workspace evidence.
 
+## Conversational route decisions
+
+The [2026-09-12 saved responses](fixtures/route-responses/forward-2026-09-12.md) record an independent agent applying the skill and its relevant references to nine supplied conversation scenarios. The evaluator received fixture workspace facts and user requests, without implementation tests, review conclusions, or expected answers. It proposed responses and actions without invoking real Goal, task, provider, or external tools. The coordinating agent manually reviewed all nine responses against the route and authorization requirements; all nine met those requirements in this simulated pass.
+
+Coverage includes default Guided drafting, Autonomous drafting without implementation, explicit Autonomous launch, Guided execution with settled decisions, a storage discussion during an active run, a route-only change from a draft, preserving an active Goal's requested budget, missing hosting/access decisions despite deployment authorization, and required versus optional unanswered questions.
+
+These are simulated instruction-following observations, not automated trace grades, live Goal activation, deployment evidence, or a measured success rate across repeated runs. The existing 18 runtime traces and 129 Python tests do not establish conversational question quality. A future forward pass should receive the raw scenarios without these saved answers and record its own responses for review.
+
 ## Optional Claude model-backed cases
 
 All seven cases run in Claude Code, with the system prompt telling the model it is in Claude Code 2.1.263 and has no goal tool. Each case runs once, with at most 8 turns and a 240-second timeout, against a copy of the `fixtures/sample-repo` workspace (one passing and one deliberately failing unittest).

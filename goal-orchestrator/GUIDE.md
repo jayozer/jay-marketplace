@@ -4,6 +4,15 @@ This guide explains how to turn broad work into safe, measurable native goals. T
 
 ## Contents
 
+Start with these practical sections:
+
+- [How to use the skill in Codex](#how-to-use-the-skill-in-codex)
+- [Guided or Autonomous](#guided-or-autonomous)
+- [Switch routes during a conversation](#switch-routes-during-a-conversation)
+- [A complete draft-to-run example](#a-complete-draft-to-run-example)
+- [Native Goal controls](#skill-invocation-and-native-goal-controls)
+- [Optional terminal helpers](#optional-terminal-helpers)
+
 1. [The Two-Layer Model](#the-two-layer-model)
 2. [Build an Execution-Ready Brief](#build-an-execution-ready-brief)
 3. [Decide Whether Work Is Goal-Shaped](#decide-whether-work-is-goal-shaped)
@@ -17,6 +26,144 @@ This guide explains how to turn broad work into safe, measurable native goals. T
 11. [Use explicit executable checks](#use-explicit-executable-checks)
 12. [Acceptance evidence](#acceptance-evidence)
 
+## How to use the skill in Codex
+
+Invoke the skill by including `$goal-orchestrator` in your message. It turns a broad request into a clear objective, bounded work, and concrete evidence of completion. It defaults to **Guided + draft**: it inspects the workspace, asks about consequential unresolved decisions, and proposes the work without starting implementation or launching a native Goal.
+
+### Guided or Autonomous
+
+Choose how decisions are made separately from when execution starts:
+
+| | Guided (default) | Autonomous |
+| --- | --- | --- |
+| Best for | Architecture, product direction, and significant tradeoffs | Outcomes where you want the agent to choose implementation details |
+| First step | Inspect the workspace and existing decisions | Same |
+| Questions | Ask about consequential unresolved choices, with recommendations where supported | Ask when missing information or authority prevents responsible progress |
+| Decisions | Resolve material choices with you; skip questions already answered | Choose reasonable defaults within scope and record consequential assumptions |
+| Launch | Only when execution is requested | Only when execution is requested |
+
+In Guided, the agent should ask a small number of useful questions after inspection. These might cover the user outcome, extending the existing architecture versus a redesign, speed/cost/simplicity tradeoffs, required compatibility, or evidence of success. It should explain the tradeoff and recommend an answer where the workspace supports one. A fully defined task does not need an interview.
+
+For example: "The existing storage layer supports this feature with a small extension. I recommend keeping it. A replacement would support offline synchronization but substantially expand the work. Is offline synchronization required for this release?"
+
+In Autonomous, the agent chooses implementation details within your boundaries and records consequential assumptions. The route does not grant permission for new product scope, commits, publishing, deployment, or other external actions. Required decisions remain unresolved until answered; optional preferences can use a stated default after a reasonable opportunity to respond. Independent authorized work can continue while input is pending.
+
+Use these copy-ready prompts:
+
+```text
+$goal-orchestrator Guided:
+Help me define this feature. Inspect the project, then ask about
+architecture and product decisions before drafting the goal.
+```
+
+```text
+$goal-orchestrator Autonomous:
+Define and run a goal for this feature. Choose implementation details
+that fit the existing architecture. Preserve public APIs.
+Do not commit, push, or deploy.
+```
+
+The labels are ordinary prompt conventions, not new slash commands. "Autonomous: draft a goal" delegates planning choices but stays in draft mode. "Guided: resolve the architecture questions, then run it" authorizes launch once the required decisions are settled, without another approval of unchanged scope. Plan mode still prevents execution in either route.
+
+### Switch routes during a conversation
+
+```text
+Let's discuss the storage decision before continuing.
+```
+
+This switches to Guided for that decision and holds dependent work. It does not silently pause, edit, clear, or replace a native Goal.
+
+```text
+Those decisions are settled. Run autonomously from here.
+```
+
+This selects Autonomous and authorizes execution. If the Goal is already active, the agent continues it. Agreed decisions, scope, destination, and budgets carry forward. Saying only "choose the remaining details yourself" changes the route but does not authorize launching a draft.
+
+### Choose what happens next
+
+There are no separate skill subcommands such as `$goal-orchestrator run`. Express the mode in ordinary language:
+
+| What you want | Example message |
+| --- | --- |
+| Explore and draft | `$goal-orchestrator Draft a goal for improving onboarding reliability.` |
+| Refine a proposal | `$goal-orchestrator Refine this goal with measurable completion criteria.` |
+| Define and start work | `$goal-orchestrator Define and run a goal to fix the failing onboarding tests.` |
+| Start an already drafted goal | `Run this goal now in the current task.` |
+| Use a separate task | `$goal-orchestrator Define and run this in a new Codex task.` |
+| Apply a native token budget | `Run the approved goal with a 50,000-token budget.` |
+
+Execution stays in the current task unless you explicitly request a separate task. A token budget is applied only when requested; reaching the limit does not count as completion. In Plan mode, the skill remains in draft mode.
+
+### A complete draft-to-run example
+
+Start with a request that describes the result and boundaries:
+
+```text
+$goal-orchestrator
+
+Draft a goal to improve parser reliability in this repository.
+
+Inspect the current implementation and tests first.
+Focus on malformed input and ambiguous command extraction.
+Preserve supported syntax and existing uncommitted work.
+Include the exact checks that would establish success.
+Do not start implementation yet.
+```
+
+The skill should return:
+
+1. A grounded brief with **Outcome, Context, Output, Boundaries, and Verification**.
+2. A decision on whether the work is verifiable, authorized, and bounded, with any unresolved decisions visible.
+3. Proposed `/goal` text with acceptance criteria, constraints, verification, and a blocked-work report requirement.
+
+You can refine that proposal conversationally:
+
+```text
+Narrow this to malformed input handling. Keep supported syntax unchanged,
+and include regression evidence for both rejected and accepted inputs.
+```
+
+When the scope is right, launch it:
+
+```text
+Run the proposed goal now in this task. Do not commit or push.
+```
+
+Existing authorization carries forward. The agent asks again only for missing decisions or authority, rather than requesting approval of unchanged scope. If you want commits, pushes, PR creation, or deployment included, explicitly include those actions in the request.
+
+You can state your coordination preference in the same message:
+
+```text
+Use subagents for independent review and test analysis where useful.
+```
+
+Or:
+
+```text
+Run this goal with one agent.
+```
+
+### Skill invocation and native Goal controls
+
+`$goal-orchestrator` prepares the work and coordinates an explicitly requested run. The following commands belong to Codex's native Goal feature:
+
+| Command | Purpose |
+| --- | --- |
+| `/goal <objective>` | Start a goal directly when its outcome and checks are already precise |
+| `/goal` | View or access the task's goal |
+| `/goal edit` | Revise the objective |
+| `/goal pause` | Pause goal work |
+| `/goal resume` | Resume goal work |
+| `/goal clear` | Remove the goal |
+
+Before an orchestrated launch, the agent checks existing Goal state and preserves unfinished work. After creation, it reads the state back to confirm the correct objective and any requested budget are active. Proposed goal text or a newly created task alone is not activation evidence. See [Launch and Lifecycle](#launch-and-lifecycle) for conflict handling and separate-task behavior.
+
+### What to expect during a run
+
+The agent records meaningful attempts: what changed, what the evidence showed, what remains uncertain, and what useful step comes next. It adapts its approach without weakening the acceptance criteria and continues independent authorized work while a decision is pending.
+
+Completion requires evidence for the full objective. Tests establish only the behavior they cover; required manual review remains pending until the observation is recorded. An unsuccessful stop should identify completed work, unmet criteria, attempts, the blocker, preserved artifacts, and the next step. Goal mode keeps the existing permissions and approval policy.
+
 ## The Two-Layer Model
 
 Native Codex Goal mode and `goal-orchestrator` solve different problems:
@@ -26,7 +173,7 @@ Native Codex Goal mode and `goal-orchestrator` solve different problems:
 
 Use `/goal` directly when the objective is already precise. Use `$goal-orchestrator` when words such as "production-ready," "reliable," "redesign," or "handle this end to end" still need to be grounded in the current workspace.
 
-The skill defaults to drafting. Only explicit language such as "start it," "run it," "execute this goal," or "handle it end to end now" authorizes native goal creation and execution.
+The skill defaults to Guided + draft. Guided/Autonomous determines how decisions are made; draft/run determines whether execution is authorized. Only explicit language such as "start it," "run it," "execute this goal," or "handle it end to end now" authorizes native goal creation and execution, subject to the host's controls.
 
 ## Build an Execution-Ready Brief
 
@@ -41,6 +188,8 @@ Output: The code, report, artifact, or user-facing result.
 Boundaries: Scope, compatibility, approval limits, and non-goals.
 Verification: Tests, observations, measurements, and review criteria.
 ```
+
+Record the selected route and draft/run mode alongside the brief. Distinguish required decisions from optional preferences; retain settled choices, rationale, and whether the user selected them or the agent assumed them. This keeps follow-up questions and route changes from reopening resolved decisions. The [brief and evidence record](skills/goal-orchestrator/references/artifacts.md) provides the supporting fields.
 
 ### Strong boundaries
 
@@ -80,7 +229,7 @@ The result needs a realistic end state. Open-ended research, subjective creative
 State the decision explicitly:
 
 ```text
-Goal-shaped: yes — verified by the focused regression, full suite, browser check, and final diff review.
+Goal-shaped: yes — verifiable with the focused regression, full suite, browser check, and final diff review; checks have not run yet.
 ```
 
 If any property is missing, stay supervised. The orchestrator can still produce a plan or perform explicitly authorized work without pretending the task is autonomous.
@@ -100,15 +249,17 @@ Constraints:
 - <scope, compatibility, approval, or non-goal boundary>
 
 Verification:
-- `<focused command>` exits 0; show its summary line.
-- `<broader command>` exits 0; show its summary line.
-- The final diff contains no unrelated changes; show `git diff --stat`.
+- Command: {"command": "<focused command>", "cwd": "<project directory>", "expected_exit": 0, "evidence": "show the test summary"}
+- Command: {"command": "<broader command>", "cwd": "<project directory>", "expected_exit": 0, "evidence": "show the test summary"}
+- Manual: Review the final diff for unrelated changes and record the result.
 
 If blocked:
-- <report what was tried and what would unblock progress, then stop>
+- <report attempts, unmet criteria, and what would unblock progress; follow the host's stopping rules>
 ```
 
 The goal body becomes the execution prompt and completion criteria. Keep it at or below 4,000 characters. Move background detail into the brief or a referenced file.
+
+Replace all placeholders before launch. Native goals also accept prose verification criteria; explicit `Command:` records are required only for execution by the optional repository helper described below.
 
 Each verification bullet names the output that proves it. Claude’s native evaluator judges conversation evidence. In every host, report the decisive output or observation so completion can be reviewed.
 
@@ -149,11 +300,11 @@ Before an explicit launch:
 4. Confirm the workspace, dirty tree, verification commands, and approval points.
 5. Start the goal without changing sandbox or approval settings.
 
-After launch or handover, report a launch record: the runtime (Codex or Claude Code), the workspace (repository path, branch, and commit), the destination (current task, new task with its real `threadId`, or handover of the `/goal` text), the goal state (the result of the last `get_goal`, or "not launched: handed over"), and the budget (the requested `token_budget` or turn clause, or "none").
+After launch or handover, report a launch record: the runtime (Codex, Claude Code, or Kimi Code) and available capabilities, workspace (repository path, branch, commit, and relevant existing changes), destination (current task, new Codex task with its real identifier, or user handover), goal state with the observation that establishes it, and budget or textual stop condition. State whether a requested limit was actually applied. In Codex, matching post-creation `get_goal` state establishes activation; a displayed command in any host is only a handover.
 
 ### Launch in the current task
 
-This is the default when the user says only "start," "run," or "execute." Inspect the current task with `get_goal`. If an unfinished Goal already exists, preserve it and ask for direction; otherwise call `create_goal` here.
+This is the default destination when the user says only "start," "run," or "execute." In Codex, confirm that `get_goal`, `create_goal`, and `update_goal` are available, then inspect the current task with `get_goal`. If an unfinished Goal already exists, preserve it; continue it when the user requests continuation of that same Goal, or surface a conflict before launching different work. Otherwise call `create_goal` here and verify the stored objective and requested budget with `get_goal`. If required tools are unavailable, return the exact goal text with state "not launched: unavailable tools." Claude Code and Kimi Code follow their own launch/handover references.
 
 ### Launch in a new Codex task
 
@@ -244,7 +395,7 @@ The check is too weak. Add direct behavior, artifact, or UI evidence and a final
 
 ### The run needs a new decision
 
-Pause execution and ask. "Do not ask questions" is not a safe substitute for missing authority or a material product choice.
+Hold work that depends on a required decision and ask; continue independent authorized work. Record whether the question is required or an optional preference. Autonomous can choose reasonable implementation defaults, but "do not ask questions" cannot supply missing authority or settle an unapproved product-scope change. Discussing a decision does not itself change native Goal lifecycle state.
 
 ### An unfinished goal already exists
 
@@ -280,8 +431,9 @@ have different effects; Kimi `next` starts immediately when no goal is active.
 ## Preserve provenance and iteration evidence
 
 The [brief and evidence record](skills/goal-orchestrator/references/artifacts.md)
-adds source paths/dates, workspace/ref, acceptance-to-evidence mapping, unresolved
-decisions, and what to record between attempts. The brief generator fills metadata
+adds the decision route and execution mode, source paths/dates, workspace/ref,
+acceptance-to-evidence mapping, required decisions versus optional preferences,
+settled choices and assumptions, and what to record between attempts. The brief generator fills metadata
 only; it does not replace Git, instruction, or verification-script discovery.
 
 After an attempt, capture decisive evidence, what was learned, the next useful
@@ -303,11 +455,66 @@ unresolved placeholders/decisions without executing anything. Execution requires
 required check fails or manual evidence remains pending. A `PASS` only covers the
 declared checks; the main agent must still establish that they prove the outcome.
 
+### Optional terminal helpers
+
+Normal conversational use does not require these utilities. They live in the repository's `goal-orchestrator/scripts/` directory and are not bundled into a standalone installed skill copy. They do not launch or manage native Goals.
+
+Run the following commands from the repository's `goal-orchestrator/` directory. Replace example paths and task text with your own.
+
+Generate a preliminary brief from project metadata (actual code, Git state, and verification still need inspection):
+
+```sh
+python3 scripts/generate_brief.py /path/to/project --task "Implement password reset"
+```
+
+Extract goal text from a document:
+
+```sh
+python3 scripts/extract_goal.py /path/to/goal.md
+```
+
+Check template structure, then readiness:
+
+```sh
+python3 scripts/benchmark_goals.py /path/to/goal.md --mode template
+python3 scripts/benchmark_goals.py /path/to/goal.md --mode readiness
+```
+
+Preview the explicit command plan without executing it:
+
+```sh
+python3 scripts/benchmark_goals.py /path/to/goal.md \
+  --test-commands --cwd /path/to/project
+```
+
+Execute the declared checks when authorized:
+
+```sh
+python3 scripts/benchmark_goals.py /path/to/goal.md \
+  --test-commands --yes --cwd /path/to/project --timeout 30
+```
+
+Only explicit `Command:` JSON records execute. File references, backticked text, and prose do not become shell commands. `--cwd` supplies the base for relative check directories; without it, relative directories resolve from the goal file. `--timeout` limits each check in seconds.
+
+| Verdict | Meaning |
+| --- | --- |
+| `STRUCTURE_ONLY` | Template structure passed; no commands ran |
+| `READY` | Authoring checks passed; verification has not run |
+| `PASS` | Declared executable checks passed with no pending manual evidence |
+| `FAIL` | An input, readiness, or executable check failed |
+| `PENDING` / `MANUAL` | Required executable or human evidence remains outstanding |
+| `NO_GOALS` | No goals were found |
+| `EMPTY_ALLOWED` | An empty scan was explicitly accepted with `--allow-empty` |
+
+A zero exit status can mean structure, readiness, or executable-check success: inspect `summary.status` before interpreting the result. See the [helper reference](README.md#helper-commands) for exit codes and the [verification schema](skills/goal-orchestrator/references/verification.md) for exact record requirements.
+
 ## Acceptance evidence
 
 The smoke suite and Python tests exercise parsing, verdicts, exact command and
 working-directory handling, timeouts, and packaging. The [behavioral cases](evals/README.md)
-exercise simulated host calls with fixed results and optional Claude model-backed
-evals. These are separate evidence levels. Confirm skill discovery and actual
+include simulated host calls with fixed results, independently reviewed
+Guided/Autonomous conversation scenarios, and optional Claude model-backed
+evals. Passing parser tests does not establish conversational question quality.
+These are separate evidence levels. Confirm skill discovery and actual
 native activation in each host only when those runs are authorized; never relabel
 simulated results as live platform acceptance.

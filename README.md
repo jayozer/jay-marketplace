@@ -12,9 +12,30 @@ installation. Support for the other kits is unchanged.
 
 | Plugin | What it is for | Skills | Start here |
 |---|---|---|---|
-| `goal-orchestrator` | Turn broad work into safe, measurable goals with explicit launch and verified completion. | `goal-orchestrator` | `goal-orchestrator/README.md` |
-| `yt-automation-kit` | Research, plan, title/SEO, thumbnail, and repurpose YouTube videos. | `yt-search`, `yt`, `seo`, `thumbnail`, `repurpose` | `yt-automation-kit/README.md` |
-| `video-understanding-kit` | Analyze local videos with Gemini multimodal models and timestamped answers. | `video-understanding` | `video-understanding-kit/README.md` |
+| `goal-orchestrator` | Define measurable goals through Guided or Autonomous decisions, with explicit launch and verified completion. | `goal-orchestrator` | [README](goal-orchestrator/README.md) · [Usage guide](goal-orchestrator/GUIDE.md) |
+| `yt-automation-kit` | Research, plan, title/SEO, thumbnail, and repurpose YouTube videos. | `yt-search`, `yt`, `seo`, `thumbnail`, `repurpose` | [README](yt-automation-kit/README.md) |
+| `video-understanding-kit` | Analyze local videos with Gemini multimodal models and timestamped answers. | `video-understanding` | [README](video-understanding-kit/README.md) |
+
+## Using Goal Orchestrator
+
+Choose how decisions are made, then say whether to draft or run:
+
+- **Guided (default):** Inspect the project, then discuss consequential unresolved architecture, product, and acceptance decisions. Skip questions already answered by the workspace or conversation.
+- **Autonomous:** Let the agent choose implementation details within your boundaries and record consequential assumptions. Required decisions and missing authority still need input.
+
+In Codex:
+
+```text
+$goal-orchestrator Guided: Inspect this feature request and ask about architecture and direction before drafting a goal.
+```
+
+```text
+$goal-orchestrator Autonomous: Define and run this goal using the existing architecture. Preserve public APIs; do not commit, push, or deploy.
+```
+
+The labels are ordinary prompt conventions. Bare invocation defaults to **Guided + draft**; choosing Autonomous alone does not authorize execution. Say "Run the proposed goal now" to launch in the current task, or explicitly request a new task. Switch with "Let's discuss this decision before continuing" or "Those decisions are settled; run autonomously from here." Existing decisions, scope, and active Goals carry forward.
+
+See the [usage walkthrough](goal-orchestrator/GUIDE.md#how-to-use-the-skill-in-codex) for commands, follow-up questions, budgets, route switching, and verification. [Host invocation names](#migrating-from-agent-workflow-kit) differ for Claude Code and Kimi Code; their native launch and lifecycle controls remain host-specific.
 
 ## Install via the marketplace (recommended)
 
