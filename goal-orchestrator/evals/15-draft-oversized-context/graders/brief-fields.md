@@ -2,7 +2,6 @@
 type: regex
 target: last_message
 match: contains
-flags: s
 weight: 0.5
 ---
-(?=.*Outcome:)(?=.*Context:)(?=.*Output:)(?=.*Boundaries:)(?=.*Verification:)
+(?=[\s\S]*?Outcome:[\s\S]*?\n/goal )(?=[\s\S]*?Context:[\s\S]*?\n/goal )(?=[\s\S]*?Output:[\s\S]*?\n/goal )(?=[\s\S]*?Boundaries:[\s\S]*?\n/goal )(?=[\s\S]*?Verification:[\s\S]*?\n/goal )
