@@ -2,7 +2,7 @@ schema_version: "1.1"
 name: explicit-run-handover
 description: Explicit run mode in Claude Code hands over the exact /goal block instead of claiming a launch.
 tags: [goal-orchestrator, launch]
-runs: 1
+runs: 3
 context:
   # Copies fixtures/sample-repo into the sandbox cwd; requires --scaffold on the run.
   scaffold_script: scaffold.sh

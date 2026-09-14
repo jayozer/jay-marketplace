@@ -2,7 +2,7 @@ schema_version: "1.1"
 name: active-goal-conflict
 description: With a goal already active, the skill warns that a new /goal replaces it and asks how to proceed.
 tags: [goal-orchestrator, lifecycle]
-runs: 1
+runs: 3
 context:
   # Copies fixtures/sample-repo into the sandbox cwd; requires --scaffold on the run.
   scaffold_script: scaffold.sh

@@ -69,7 +69,7 @@ These are simulated instruction-following observations, not automated trace grad
 
 ## Optional Claude model-backed cases
 
-All seven cases run in Claude Code, with the system prompt telling the model it is in Claude Code 2.1.263 and has no goal tool. Each case runs once, with at most 8 turns and a 240-second timeout, against a copy of the `fixtures/sample-repo` workspace (one passing and one deliberately failing unittest).
+All seven cases run in Claude Code, with the system prompt telling the model it is in Claude Code 2.1.263 and has no goal tool. Each case runs three times, with at most 8 turns and a 240-second timeout, against a copy of the `fixtures/sample-repo` workspace (one passing and one deliberately failing unittest).
 
 | Case | Tags | Checks |
 | --- | --- | --- |
@@ -81,7 +81,31 @@ All seven cases run in Claude Code, with the system prompt telling the model it 
 | `evidence-before-completion` | completion | Completion is reported only after running `python3 -m unittest discover -s tests` and showing its output; the fixture fails, so the goal is reported as not met. |
 | `already-precise-defers` | draft | An already-precise `/goal` is deferred to native `/goal` instead of being rewritten into a brief. |
 
-Every case also carries a `skill-invoked` grader (`tool_used: Skill`, `arm: with-only`), the plugin-fired indicator that shows the skill, not baseline Claude, produced the behavior. This same grader is scored under `--ablation none` and becomes an unscored plugin-fired indicator only under `--ablation with-without`, so a run with `--ablation none` should expect it to count.
+Every case also carries a `skill-invoked` grader (`tool_used: Skill`, `arm: with-only`), the plugin-fired indicator that shows the skill, not baseline Claude, produced the behavior. Under `--ablation with-without` it is reported but not scored, so it never moves Δ; it is a trigger check alongside the outcome graders, not a score.
+
+## Draft-mode ablation suite (cases 11-17)
+
+Seven cases added on 2026-09-14 that measure uplift for the draft-mode flow: a broad request becomes a five-field brief plus a copy-ready `/goal` block, nothing is implemented, and the reply states that nothing was launched. They live beside the original seven cases, use the same `fixtures/sample-repo` scaffold, and carry their run settings in `prompt.md` frontmatter (`runs: 3`, read-only tools only, 120-360 s budgets). `case.yaml` holds only the tag and scaffold path.
+
+| Case | Fires? | What it stresses |
+| --- | --- | --- |
+| `11-draft-fix-failing-test` | yes | Baseline just fixes `add`; the draft must reference the real test command and failing test. |
+| `12-draft-broad-feature` | yes | Multi-item scope (three functions, tests, CHANGELOG) must all land in Done when. |
+| `13-draft-vague-define-done` | yes | "Production-ready" must become observable Done when bullets with stated defaults, not a questionnaire. |
+| `14-draft-explicit-not-launched` | yes | Claude Code host: the reply must say the goal was not launched. |
+| `15-draft-oversized-context` | yes | ~11k characters of pasted requirements; the goal body must stay compact and under 4,000 characters. |
+| `16-neg-already-precise-goal` | no | A complete `/goal` pasted with "ready as-is?" must be answered, not rewritten into a brief. |
+| `17-neg-plain-question` | no | A one-line code question fires no skill and answers `-1`. |
+
+Graders are outcome checks on the last message: regex for the `/goal` block, its four sections, the 4,000-character cap, and the not-launched statement; `tool_used` guards on Edit/Write (and Skill for the negative cases); and sonnet-judged rubrics for evidence-naming verification bullets, scope coverage, and no-implementation claims. The `skill-invoked` grader is display-only under ablation. The `brief-fields` regex mirrors SKILL.md's brief format and is weighted 0.5 as a secondary check.
+
+Run the suite (the `--tag draft-mode` filter selects these seven; `--case` accepts one case at a time):
+
+```bash
+claude plugin eval . --tag draft-mode --ablation with-without --scaffold --judge-model sonnet --max-cost-usd 12
+```
+
+Add `--no-publish` to keep the report local. The headline number is Δ (with-plugin score minus without-plugin score). Pilots on 2026-09-14 (1 run each) scored Δ +0.26 to +0.62 on the five fire cases and 0 on the two negatives, at about $2.60 per single-run pass, so a full `runs: 3` pass is roughly $8. Case 15 is the highest-variance case: the with-plugin arm ranged 0.63 to 0.89 depending on whether the goal body referenced the requirements by ID or restated them.
 
 ## What it cannot test
 
@@ -117,30 +141,30 @@ The runner merges `case.yaml` with `prompt.md` and `graders/*.md` in the same di
 
 ## Run
 
-Run from the repository root. Two flags are always required: `--scaffold` (runs each case's `scaffold.sh`, off by default) and `--allow-tools Bash` (a case's `allowed_tools: [Bash]` is honored only with this operator grant; without it `evidence-before-completion` cannot run the tests).
+Run from the repository root. Two flags are always required: `--scaffold` (runs each case's `scaffold.sh`, off by default) and `--allow-tools Bash` (a case's `allowed_tools: [Bash]` is honored only with this operator grant; without it `evidence-before-completion` cannot run the tests). Every case is set to `runs: 3`; use `--runs 1` only for a quick pilot.
 
-Cheap check, one run per case, no baseline arm, results kept local:
-
-```bash
-claude plugin eval ./goal-orchestrator --ablation none --runs 1 --no-publish --max-cost-usd 10 \
-  --scaffold --allow-tools Bash --json goal-orchestrator/evals/results/latest.json
-```
-
-Threshold run for CI, failing when any case scores below 0.75:
+Full suite for the original seven cases, with-without ablation, sonnet judge, results kept local:
 
 ```bash
-claude plugin eval ./goal-orchestrator --ablation none --runs 1 --no-publish --max-cost-usd 10 \
-  --scaffold --allow-tools Bash --threshold 0.75 --json goal-orchestrator/evals/results/latest.json
+claude plugin eval ./goal-orchestrator --ablation with-without --no-publish --max-cost-usd 25 \
+  --scaffold --allow-tools Bash --judge-model sonnet --json goal-orchestrator/evals/results/ablation.json
 ```
 
-With-without ablation, adding a no-plugin baseline arm and reporting the score delta:
+Cheap pilot, one run per case:
 
 ```bash
-claude plugin eval ./goal-orchestrator --ablation with-without --runs 1 --no-publish --max-cost-usd 20 \
-  --scaffold --allow-tools Bash --json goal-orchestrator/evals/results/ablation.json
+claude plugin eval ./goal-orchestrator --ablation with-without --runs 1 --no-publish --max-cost-usd 10 \
+  --scaffold --allow-tools Bash --judge-model sonnet
 ```
 
-Useful variations: `--case draft-only` or `--tag launch` to filter, `--judge-model sonnet` for a stronger LLM judge (the default is haiku), and `--keep-temp` to inspect the scaffolded sandbox after a failure. Results also land in `goal-orchestrator/evals/results/<timestamp>/`, which is gitignored.
+Threshold run for CI, failing when any case scores below 0.75 in the with-plugin arm:
+
+```bash
+claude plugin eval ./goal-orchestrator --ablation with-without --no-publish --max-cost-usd 25 \
+  --scaffold --allow-tools Bash --judge-model sonnet --threshold 0.75 --json goal-orchestrator/evals/results/latest.json
+```
+
+Useful variations: `--case draft-only` (one case per invocation) or `--tag launch` to filter, and `--keep-temp` to inspect the scaffolded sandbox after a failure. Keep `--ablation with-without`: the headline number is Δ (with-plugin minus without-plugin), and a single-arm score cannot distinguish the skill from baseline Claude. Use a sonnet-tier or larger judge; haiku misses the evidence-naming distinctions the LLM graders depend on. Results also land in `goal-orchestrator/evals/results/<timestamp>/`, which is gitignored.
 
 ## Early access gate
 
@@ -174,4 +198,4 @@ EOF
 
 ## Cost
 
-Seven cases, one run each, one LLM grader per case: roughly one to five US dollars per full run with the default agent model (the skill and fixture add about 10k tokens of context per turn, and each case takes a few turns). The with-without ablation doubles the agent runs. LLM grading on haiku is a few cents. `--max-cost-usd 10` is a safe ceiling for the single-arm runs.
+The original seven cases at `runs: 3` with both ablation arms are roughly 42 agent runs plus sonnet judging: budget about 10 to 15 US dollars of equivalent API usage per full pass (the skill and fixture add about 10k tokens of context per turn). A `--runs 1` pilot is a third of that. The draft-mode suite measured $8.12 for its own 42-run pass. `--max-cost-usd 25` is a safe ceiling for a full pass of either suite.
