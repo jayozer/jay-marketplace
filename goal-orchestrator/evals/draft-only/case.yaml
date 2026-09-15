@@ -2,7 +2,7 @@ schema_version: "1.1"
 name: draft-only
 description: Draft mode produces a brief and a /goal block without implementing or launching anything.
 tags: [goal-orchestrator, draft]
-runs: 1
+runs: 3
 context:
   # Copies fixtures/sample-repo into the sandbox cwd; requires --scaffold on the run.
   scaffold_script: scaffold.sh
